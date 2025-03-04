@@ -6,7 +6,6 @@
 LoRaModule lora;
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
   lora.begin(); // 初始化LoRa模块并读取启动信息
 
@@ -26,6 +25,7 @@ void setup() {
   rxConfig.dataRate = SF7; // 设置数据速率
   rxConfig.bandwidth = BW_125KHz; // 设置带宽
   rxConfig.codeRate = CR_4_5; // 设置编码率
+  rxConfig.iqConverted = 0; //设置IQ调制开关
 
   if (lora.setRxConfig(&rxConfig)) 
   {

@@ -1,16 +1,19 @@
 #include "LoRaModule.h"
 #include <Arduino.h>
 
+/*初始化LoRa模块*/
 void LoRaModule::begin() {
-    Serial1.begin(9600, SERIAL_8N1, 18, 17); // 初始化UART，使用GPIO18作为RX，GPIO17作为TX
+    Serial1.begin(9600, SERIAL_8N1, 18, 17); // 初始化UART，使用GPIO18作为RX1，GPIO17作为TX1
 }
 
+/*设置发送参数*/
 void LoRaModule::setTxConfig(long freq, int dataRate, int bandwidth, int codeRate, int power, int iqConverted) {
     String command = "AT+CTX=" + String(freq) + "," + String(dataRate) + "," + String(bandwidth) + "," +
                      String(codeRate) + "," + String(power) + "," + String(iqConverted);
     Serial1.println(command); // 发送配置发射参数的AT指令
 }
 
+/*设置接收参数*/
 bool LoRaModule::setRxConfig(const LoRaRxConfigStruct *pConfig)
 {
     if(pConfig==nullptr)
@@ -19,7 +22,7 @@ bool LoRaModule::setRxConfig(const LoRaRxConfigStruct *pConfig)
         return false;
     }
     String command = "AT+CRX=" + String(pConfig->freq) + "," + String(pConfig->dataRate) + "," +
-                     String(pConfig->bandwidth) + "," + String(pConfig->codeRate);
+                     String(pConfig->bandwidth) + "," + String(pConfig->codeRate) + "," + String(pConfig->iqConverted);
     Serial1.println(command); // 发送配置接收参数的AT指令
 
     // 等待响应
@@ -39,6 +42,7 @@ bool LoRaModule::setRxConfig(const LoRaRxConfigStruct *pConfig)
     return false; // 设置失败
 }
 
+/*设置本地地址*/
 bool LoRaModule::setLocalAddress(int localAddr) {
     String command = "AT+CADDRSET=" + String(localAddr);
     Serial1.println(command); // 发送配置本地地址的AT指令
@@ -71,6 +75,7 @@ bool LoRaModule::setLocalAddress(int localAddr) {
     return false; // 设置失败
 }
 
+/*设置目标地址*/
 bool LoRaModule::setTargetAddress(int targetAddr) {
     String command = "AT+CTXADDRSET=" + String(targetAddr);
     Serial1.println(command); // 发送配置目标地址的AT指令
@@ -92,6 +97,7 @@ bool LoRaModule::setTargetAddress(int targetAddr) {
 
 }
 
+/*休眠模式*/
 void LoRaModule::setSleepMode(int sleepMode) {
     String command = "AT+CSLEEP=" + String(sleepMode);
     Serial1.println(command); // 发送设置睡眠模式的AT指令

@@ -18,14 +18,15 @@ struct LoRaRxConfigStruct {
     DataRate dataRate; // 速率
     Bandwidth bandwidth; // 带宽
     CodeRate codeRate; // 编码率
+    bool iqConverted; //IQ调制功能
 };
 
 class LoRaModule {
 public:
-    void begin();
-    void setTxConfig(long freq, int dataRate, int bandwidth, int codeRate, int power, int iqConverted);
-    bool setRxConfig(const LoRaRxConfigStruct* pConfig);
-    bool setLocalAddress(int localAddr);
-    bool setTargetAddress(int targetAddr);
-    void setSleepMode(int sleepMode);
+    void begin();   //初始化LoRa模块
+    void setTxConfig(long freq, int dataRate, int bandwidth, int codeRate, int power, int iqConverted); //设置发射参数
+    bool setRxConfig(const LoRaRxConfigStruct* pConfig);    //设置接受参数
+    bool setLocalAddress(int localAddr);    //设置本地地址
+    bool setTargetAddress(int targetAddr);  //设置目标地址
+    void setSleepMode(int sleepMode);       //休眠模式
 };
