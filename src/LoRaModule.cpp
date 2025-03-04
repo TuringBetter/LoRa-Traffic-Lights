@@ -1,5 +1,4 @@
 #include "LoRaModule.h"
-#include <Arduino.h>
 
 /*初始化LoRa模块*/
 void LoRaModule::begin() {
@@ -7,14 +6,63 @@ void LoRaModule::begin() {
 }
 
 /*设置发送参数*/
-void LoRaModule::setTxConfig(long freq, int dataRate, int bandwidth, int codeRate, int power, int iqConverted) {
-    String command = "AT+CTX=" + String(freq) + "," + String(dataRate) + "," + String(bandwidth) + "," +
-                     String(codeRate) + "," + String(power) + "," + String(iqConverted);
+bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig) 
+{
+    if(pConfig==nullptr)
+    {
+        Serial.println("[Debug Serial]:LoRaRxConfigStruct Error");
+        return false;
+    }
+    String command = "AT+CTXS=" + String(pConfig->freq)
+                        +  ","  + String(pConfig->dataRate) 
+                        +  ","  + String(pConfig->bandwidth) 
+                        +  ","  + String(pConfig->codeRate) 
+                        +  ","  + String(pConfig->power) 
+                        +  ","  + String(pConfig->iqConverted);
     Serial1.println(command); // 发送配置发射参数的AT指令
+
+    // 等待响应
+    unsigned long startTime = millis();
+    while (millis() - startTime < 2000) { // 等待最多2秒
+        if (Serial1.available()) {
+            String response = Serial1.readStringUntil('\n'); // 读取一行响应
+            Serial.println("[LoRa  Serial]:" + response);
+            // 检查响应内容
+            if (response.indexOf("radio") != -1) {
+                // 保存接收配置的数据
+                _currentFreq         = pConfig->freq;
+                _currentDataRate     = pConfig->dataRate;
+                _currentBandwidth    = pConfig->bandwidth;
+                _currentCodeRate     = pConfig->codeRate;
+                _power               = pConfig->power;
+                _currentIqConverted  = pConfig->iqConverted;
+
+                _currentTransferMode = TransferMode::TX_MODE;
+                // Serial.println("[Debug Serial]:set local address: " + String(localAddr));
+                return true; // 设置成功
+            } else if (response.indexOf("ERROR") != -1) {
+                // 如果收到错误响应，则重新发送AT指令
+                Serial.println("[Debug Serial]:Error received, retrying...");
+                Serial1.println(command); // 重新发送AT指令
+                // 重传次数限制
+                static int retryCount = 0;
+                if (retryCount < 5) 
+                    retryCount++;
+                else 
+                {
+                    Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
+                    return false; // 重传次数达到上限，设置失败
+                }
+            }
+        }
+    }
+
+    Serial.println("[Debug Serial]:UART Time Out Error");
+    return false; // 设置失败
 }
 
 /*设置接收参数*/
-bool LoRaModule::setRxConfig(const LoRaRxConfigStruct *pConfig)
+bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
 {
     if(pConfig==nullptr)
     {
@@ -37,6 +85,16 @@ bool LoRaModule::setRxConfig(const LoRaRxConfigStruct *pConfig)
             // 检查响应内容
             if (response.indexOf("start") != -1) {
                 // Serial.println("[Debug Serial]:set local address: " + String(localAddr));
+
+                // 保存接收配置的数据
+                _currentFreq         = pConfig->freq;
+                _currentDataRate     = pConfig->dataRate;
+                _currentBandwidth    = pConfig->bandwidth;
+                _currentCodeRate     = pConfig->codeRate;
+                _currentIqConverted  = pConfig->iqConverted;
+
+                _currentTransferMode = TransferMode::RX_MODE;
+
                 return true; // 设置成功
             } else if (response.indexOf("ERROR") != -1) {
                 // 如果收到错误响应，则重新发送AT指令
@@ -54,12 +112,13 @@ bool LoRaModule::setRxConfig(const LoRaRxConfigStruct *pConfig)
             }
         }
     }
+
     Serial.println("[Debug Serial]:UART Time Out Error");
     return false; // 设置失败
 }
 
 /*设置本地地址*/
-bool LoRaModule::setLocalAddress(int localAddr) {
+bool LoRaModule::setLocalAddress(uint32_t localAddr) {
     String command = "AT+CADDRSET=" + String(localAddr);
     Serial1.println(command); // 发送配置本地地址的AT指令
 
@@ -72,6 +131,7 @@ bool LoRaModule::setLocalAddress(int localAddr) {
             // 检查响应内容
             if (response.startsWith("set local address:")) {
                 Serial.println("[Debug Serial]:set local address: " + String(localAddr));
+                _localAddr=localAddr;
                 return true; // 设置成功
             } else if (response.startsWith("+CMD ERROR")) {
                 // 如果收到错误响应，则重新发送AT指令
@@ -92,25 +152,37 @@ bool LoRaModule::setLocalAddress(int localAddr) {
 }
 
 /*设置目标地址*/
-bool LoRaModule::setTargetAddress(int targetAddr) {
+bool LoRaModule::setTargetAddress(uint32_t targetAddr) 
+{
     String command = "AT+CTXADDRSET=" + String(targetAddr);
-    Serial1.println(command); // 发送配置目标地址的AT指令
-
+    Serial1.println(command); // 发送配置本地地址的AT指令
     // 等待响应
     unsigned long startTime = millis();
-    while (millis() - startTime < 2000) { // 等待最多2秒
+    while (millis() -startTime < 2000) { // 等待最多2秒
         if (Serial1.available()) {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
             if (response.startsWith("set target address:")) {
                 Serial.println("[Debug Serial]:set target address: " + String(targetAddr));
+                _targetAddr=targetAddr;
                 return true; // 设置成功
+            } else if (response.startsWith("+CMD ERROR")) {
+                // 如果收到错误响应，则重新发送AT指令
+                Serial.println("[Debug Serial]:Error received, retrying...");
+                Serial1.println(command); // 重新发送AT指令
+                // 重传次数限制
+                static int retryCount = 0;
+                if (retryCount < 5) {
+                    retryCount++;
+                } else {
+                    Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
+                    return false; // 重传次数达到上限，设置失败
+                }
             }
         }
     }
     return false; // 设置失败
-
 }
 
 /*休眠模式*/
