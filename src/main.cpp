@@ -22,10 +22,11 @@ void setup() {
   }
   // 测试设置接收配置
   LoRaRxConfigStruct rxConfig;
-  rxConfig.freq = 868100000; // 设置频率
+  rxConfig.freq = 470500000; // 设置频率
   rxConfig.dataRate = SF7; // 设置数据速率
   rxConfig.bandwidth = BW_125KHz; // 设置带宽
   rxConfig.codeRate = CR_4_5; // 设置编码率
+  rxConfig.iqConverted = IQ_ON;
 
   if (lora.setRxConfig(&rxConfig)) 
   {

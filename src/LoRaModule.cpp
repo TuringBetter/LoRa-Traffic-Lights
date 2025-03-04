@@ -18,8 +18,11 @@ bool LoRaModule::setRxConfig(const LoRaRxConfigStruct *pConfig)
         Serial.println("[Debug Serial]:LoRaRxConfigStruct Error");
         return false;
     }
-    String command = "AT+CRX=" + String(pConfig->freq) + "," + String(pConfig->dataRate) + "," +
-                     String(pConfig->bandwidth) + "," + String(pConfig->codeRate);
+    String command = "AT+CRXS=" + String(pConfig->freq) 
+                        +  ","  + String(pConfig->dataRate) 
+                        +  ","  + String(pConfig->bandwidth) 
+                        +  ","  + String(pConfig->codeRate)
+                        +  ","  + String(pConfig->iqConverted);
     Serial1.println(command); // 发送配置接收参数的AT指令
 
     // 等待响应
@@ -29,9 +32,22 @@ bool LoRaModule::setRxConfig(const LoRaRxConfigStruct *pConfig)
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
-            if (response.startsWith("params num: 5 ,start to recv package")) {
+            if (response.indexOf("start") != -1) {
                 // Serial.println("[Debug Serial]:set local address: " + String(localAddr));
                 return true; // 设置成功
+            } else if (response.indexOf("ERROR") != -1) {
+                // 如果收到错误响应，则重新发送AT指令
+                Serial.println("[Debug Serial]:Error received, retrying...");
+                Serial1.println(command); // 重新发送AT指令
+                // 重传次数限制
+                static int retryCount = 0;
+                if (retryCount < 5) 
+                    retryCount++;
+                else 
+                {
+                    Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
+                    return false; // 重传次数达到上限，设置失败
+                }
             }
         }
     }
@@ -45,7 +61,7 @@ bool LoRaModule::setLocalAddress(int localAddr) {
 
     // 等待响应
     unsigned long startTime = millis();
-    while (millis() - startTime < 2000) { // 等待最多2秒
+    while (millis() -startTime < 2000) { // 等待最多2秒
         if (Serial1.available()) {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
