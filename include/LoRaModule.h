@@ -26,8 +26,9 @@ enum IqConverted
 };
 
 enum TransferMode {
+    NONE=-1,
     RX_MODE = 0, 
-    TX_MODE
+    TX_MODE=1
 };
 
 
@@ -48,6 +49,7 @@ public:
     bool setLocalAddress(uint32_t localAddr);    //设置本地地址
     bool setTargetAddress(uint32_t targetAddr);  //设置目标地址
     void setSleepMode(int sleepMode);       //休眠模式
+    void quitTransparent(void);
 
 private:
     TransferMode _currentTransferMode;

@@ -4,6 +4,7 @@
 void LoRaModule::begin() {
     Serial1.begin(9600, SERIAL_8N1, 18, 17); // 初始化UART，使用GPIO18作为RX1，GPIO17作为TX1
     Serial1.println("+++");
+    this->_currentTransferMode=TransferMode::NONE;
 }
 
 /*设置发送参数*/
@@ -190,4 +191,10 @@ bool LoRaModule::setTargetAddress(uint32_t targetAddr)
 void LoRaModule::setSleepMode(int sleepMode) {
     String command = "AT+CSLEEP=" + String(sleepMode);
     Serial1.println(command); // 发送设置睡眠模式的AT指令
+}
+
+void LoRaModule::quitTransparent(void)
+{
+    Serial1.println("+++");
+    this->_currentTransferMode=TransferMode::NONE;
 }
