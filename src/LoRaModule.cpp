@@ -30,7 +30,8 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
-            if (response.indexOf(">") != -1) {
+            if (response.indexOf(">") != -1) 
+            {
                 // 保存接收配置的数据
                 _currentFreq         = pConfig->freq;
                 _currentDataRate     = pConfig->dataRate;
@@ -42,7 +43,9 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
                 _currentTransferMode = TransferMode::TX_MODE;
                 // Serial.println("[Debug Serial]:set local address: " + String(localAddr));
                 return true; // 设置成功
-            } else if (response.indexOf("ERROR") != -1) {
+            } 
+            else if (response.indexOf("ERROR") != -1) 
+            {
                 // 如果收到错误响应，则重新发送AT指令
                 Serial.println("[Debug Serial]:Error received, retrying...");
                 Serial1.println(command); // 重新发送AT指令
@@ -85,7 +88,8 @@ bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
-            if (response.indexOf("start") != -1) {
+            if (response.indexOf("start") != -1) 
+            {
                 // Serial.println("[Debug Serial]:set local address: " + String(localAddr));
 
                 // 保存接收配置的数据
@@ -98,7 +102,9 @@ bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
                 _currentTransferMode = TransferMode::RX_MODE;
 
                 return true; // 设置成功
-            } else if (response.indexOf("ERROR") != -1) {
+            } 
+            else if (response.indexOf("ERROR") != -1) 
+            {
                 // 如果收到错误响应，则重新发送AT指令
                 Serial.println("[Debug Serial]:Error received, retrying...");
                 Serial1.println(command); // 重新发送AT指令
@@ -131,19 +137,23 @@ bool LoRaModule::setLocalAddress(uint32_t localAddr) {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
-            if (response.startsWith("set local address:")) {
+            if (response.startsWith("set local address:")) 
+            {
                 Serial.println("[Debug Serial]:set local address: " + String(localAddr));
                 _localAddr=localAddr;
                 return true; // 设置成功
-            } else if (response.startsWith("+CMD ERROR")) {
+            } 
+            else if (response.startsWith("+CMD ERROR")) 
+            {
                 // 如果收到错误响应，则重新发送AT指令
                 Serial.println("[Debug Serial]:Error received, retrying...");
                 Serial1.println(command); // 重新发送AT指令
                 // 重传次数限制
                 static int retryCount = 0;
-                if (retryCount < 5) {
+                if (retryCount < 5) 
                     retryCount++;
-                } else {
+                else 
+                {
                     Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
                     return false; // 重传次数达到上限，设置失败
                 }
@@ -165,19 +175,23 @@ bool LoRaModule::setTargetAddress(uint32_t targetAddr)
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
-            if (response.startsWith("set target address:")) {
+            if (response.startsWith("set target address:")) 
+            {
                 Serial.println("[Debug Serial]:set target address: " + String(targetAddr));
                 _targetAddr=targetAddr;
                 return true; // 设置成功
-            } else if (response.startsWith("+CMD ERROR")) {
+            } 
+            else if (response.startsWith("+CMD ERROR")) 
+            {
                 // 如果收到错误响应，则重新发送AT指令
                 Serial.println("[Debug Serial]:Error received, retrying...");
                 Serial1.println(command); // 重新发送AT指令
                 // 重传次数限制
                 static int retryCount = 0;
-                if (retryCount < 5) {
+                if (retryCount < 5) 
                     retryCount++;
-                } else {
+                else 
+                {
                     Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
                     return false; // 重传次数达到上限，设置失败
                 }
