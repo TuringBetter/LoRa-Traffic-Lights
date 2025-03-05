@@ -212,3 +212,28 @@ void LoRaModule::quitTransparent(void)
     Serial1.println("+++");
     this->_currentTransferMode=TransferMode::NONE;
 }
+
+bool LoRaModule::sendData(const std::string &str)
+{
+    if(this->_currentTransferMode!=TransferMode::TX_MODE)
+    {
+        Serial.println("[Debug Serial]: Current transfer mode is not TX_MODE.");
+        return false;
+    }
+    Serial1.println(str);
+    // 等待响应
+    unsigned long startTime = millis();
+    while (millis() -startTime < 2000) { // 等待最多2秒
+        if (Serial1.available()) {
+            String response = Serial1.readStringUntil('\n'); // 读取一行响应
+            Serial.println("[LoRa  Serial]:" + response);
+            // 检查响应内容
+            if (response.startsWith("OnTxDone")) 
+            {
+                Serial.println("[Debug Serial]:send data successful");
+                return true; // 设置成功
+            } 
+        }
+    }
+    return false; // 设置失败
+}
