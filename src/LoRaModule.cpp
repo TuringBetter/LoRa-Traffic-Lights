@@ -213,12 +213,16 @@ void LoRaModule::quitTransparent(void)
     this->_currentTransferMode=TransferMode::NONE;
 }
 
-bool LoRaModule::sendData(const std::string &str)
+bool LoRaModule::sendData(const String &str)
 {
     if(this->_currentTransferMode!=TransferMode::TX_MODE)
     {
         Serial.println("[Debug Serial]: Current transfer mode is not TX_MODE.");
         return false;
+    }
+    if (str.isEmpty()) {
+        Serial.println("[Debug Serial]: Data to send is empty.");
+        return false; // 数据为空，发送失败
     }
     Serial1.println(str);
     // 等待响应

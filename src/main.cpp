@@ -32,6 +32,7 @@ void setup() {
   txConfig.iqConverted = IQ_ON;
 
   lora.setTxConfig(&txConfig);
+  lora.sendData("0505");
 }
 
 void loop() {

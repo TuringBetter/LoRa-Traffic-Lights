@@ -51,7 +51,7 @@ public:
     bool setTargetAddress(uint32_t targetAddr);  //设置目标地址
     void setSleepMode(int sleepMode);       //休眠模式
     void quitTransparent(void);
-    bool sendData(const std::string& str);
+    bool sendData(const String& str);
 
 private:
     TransferMode _currentTransferMode;
