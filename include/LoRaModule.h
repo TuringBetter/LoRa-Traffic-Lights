@@ -3,14 +3,8 @@
 #include <string>
 enum DataRate 
 {
-    SF12 = 0, 
-    SF11, 
-    SF10, 
-    SF9, 
-    SF8, 
-    SF7, 
-    SF6, 
-    SF5
+    SF12 = 0, SF11, SF10, 
+    SF9, SF8, SF7, SF6, SF5
 };
 
 enum Bandwidth 
@@ -39,44 +33,44 @@ enum TransferMode
 
 struct LoRaTransConfigStruct 
 {
-    long freq; // 频率
-    DataRate dataRate; // 速率
-    Bandwidth bandwidth; // 带宽
-    CodeRate codeRate; // 编码率
-    IqConverted iqConverted; // IQ转换功能
-    uint8_t power;// 发射功率
+    long        freq;             // 频率
+    DataRate    dataRate;         // 速率
+    Bandwidth   bandwidth;        // 带宽
+    CodeRate    codeRate;         // 编码率
+    IqConverted iqConverted;      // IQ转换功能
+    uint8_t     power;            // 发射功率
 };
 
 struct RecvInfo
 {
-    String message;
-    uint32_t fromAddr;
-    int rssi;
-    int snr;
+    String      message;
+    uint32_t    fromAddr;
+    int         rssi;
+    int         snr;
 };
 
 class LoRaModule {
 public:
     void begin();   //初始化LoRa模块
-    bool setTxConfig(const LoRaTransConfigStruct* pConfig); //设置发射参数
+    bool setTxConfig(const LoRaTransConfigStruct* pConfig);     //设置发射参数
     bool setRxConfig(const LoRaTransConfigStruct* pConfig);    //设置接受参数
-    bool setLocalAddress(uint32_t localAddr);    //设置本地地址
-    bool setTargetAddress(uint32_t targetAddr);  //设置目标地址
-    void setSleepMode(int sleepMode);       //休眠模式
-    void quitTransparent(void);               // 退出穿透模式
-    bool sendData(const String& str);         // 发送数据
-    uint64_t receiveData(RecvInfo& recvinfo); // 接收数据
+    bool setLocalAddress(uint32_t localAddr);    // 设置本地地址
+    bool setTargetAddress(uint32_t targetAddr);  // 设置目标地址
+    void setSleepMode(int sleepMode);            // 休眠模式
+    void quitTransparent(void);                  // 退出穿透模式
+    bool sendData(const String& str);            // 发送数据
+    uint64_t receiveData(RecvInfo& recvinfo);    // 接收数据
 
 private:
     TransferMode _currentTransferMode;
 
-    long _currentFreq;               // 当前频率
-    DataRate _currentDataRate;       // 当前速率
-    Bandwidth _currentBandwidth;     // 当前带宽
-    CodeRate _currentCodeRate;       // 当前编码率
-    IqConverted _currentIqConverted; // IQ转换功能
-    uint8_t _power;                  // 发射功率
+    long         _currentFreq;               // 当前频率
+    DataRate     _currentDataRate;           // 当前速率
+    Bandwidth    _currentBandwidth;          // 当前带宽
+    CodeRate     _currentCodeRate;           // 当前编码率
+    IqConverted  _currentIqConverted;        // IQ转换功能
+    uint8_t      _power;                     // 发射功率
 
-    uint32_t _localAddr;
-    uint32_t _targetAddr;
+    uint32_t     _localAddr;
+    uint32_t     _targetAddr;
 };
