@@ -3,6 +3,7 @@
 /*初始化LoRa模块*/
 void LoRaModule::begin() {
     Serial1.begin(9600, SERIAL_8N1, 18, 17); // 初始化UART，使用GPIO18作为RX1，GPIO17作为TX1
+    Serial1.println("+++");
 }
 
 /*设置发送参数*/
@@ -13,7 +14,7 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
         Serial.println("[Debug Serial]:LoRaRxConfigStruct Error");
         return false;
     }
-    String command = "AT+CTXS=" + String(pConfig->freq)
+    String command = "AT+CTX="  + String(pConfig->freq)
                         +  ","  + String(pConfig->dataRate) 
                         +  ","  + String(pConfig->bandwidth) 
                         +  ","  + String(pConfig->codeRate) 
@@ -28,7 +29,7 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
-            if (response.indexOf("radio") != -1) {
+            if (response.indexOf(">") != -1) {
                 // 保存接收配置的数据
                 _currentFreq         = pConfig->freq;
                 _currentDataRate     = pConfig->dataRate;
