@@ -11,30 +11,27 @@ void setup() {
 
   // 测试设置本地地址
   int localAddress = 12; // 要设置的本地地址
-  if (lora.setLocalAddress(localAddress)) 
-  {
-    Serial.println("[Debug Serial]:Local address set successfully."); // 设置成功
-  } 
-  else 
-  {
-    Serial.println("[Debug Serial]:Failed to set local address."); // 设置失败
-  }
+  int targetAddress = 13;
+  lora.setLocalAddress(localAddress);
+  lora.setTargetAddress(targetAddress);
   // 测试设置接收配置
-  LoRaRxConfigStruct rxConfig;
+  LoRaTransConfigStruct rxConfig;
   rxConfig.freq = 470500000; // 设置频率
   rxConfig.dataRate = SF7; // 设置数据速率
   rxConfig.bandwidth = BW_125KHz; // 设置带宽
   rxConfig.codeRate = CR_4_5; // 设置编码率
   rxConfig.iqConverted = IQ_ON;
 
-  if (lora.setRxConfig(&rxConfig)) 
-  {
-    Serial.println("[Debug Serial]:Rx configuration set successfully."); // 设置成功
-  } 
-  else 
-  {
-    Serial.println("[Debug Serial]:Failed to set Rx configuration."); // 设置失败
-  }
+  // 测试设置发送配置
+  LoRaTransConfigStruct txConfig;
+  txConfig.freq = 470500000; // 设置频率
+  txConfig.dataRate = SF7; // 设置数据速率
+  txConfig.bandwidth = BW_125KHz; // 设置带宽
+  txConfig.codeRate = CR_4_5; // 设置编码率
+  txConfig.power = 21;
+  txConfig.iqConverted = IQ_ON;
+
+  lora.setTxConfig(&txConfig);
 }
 
 void loop() {
