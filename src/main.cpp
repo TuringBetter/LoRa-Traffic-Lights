@@ -11,9 +11,9 @@ void setup() {
 
   // 测试设置本地地址
   int localAddress = 12; // 要设置的本地地址
-  int targetAddress = 13;
+  // int targetAddress = 13;
   lora.setLocalAddress(localAddress);
-  lora.setTargetAddress(targetAddress);
+  // lora.setTargetAddress(targetAddress);
   // 测试设置接收配置
   LoRaTransConfigStruct rxConfig;
   rxConfig.freq = 470500000; // 设置频率
@@ -31,8 +31,13 @@ void setup() {
   txConfig.power = 21;
   txConfig.iqConverted = IQ_ON;
 
-  lora.setTxConfig(&txConfig);
-  lora.sendData("0505");
+  lora.setRxConfig(&rxConfig);
+  // lora.sendData("0505");
+  RecvInfo test;
+  lora.receiveData(test);
+  Serial.println(test.message);
+  Serial.println("from="+String(test.fromAddr));
+  Serial.println("rssi="+String(test.rssi)+" snr="+String(test.snr));
 }
 
 void loop() {

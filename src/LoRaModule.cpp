@@ -1,7 +1,8 @@
 #include "LoRaModule.h"
 
 /*初始化LoRa模块*/
-void LoRaModule::begin() {
+void LoRaModule::begin() 
+{
     Serial1.begin(9600, SERIAL_8N1, 18, 17); // 初始化UART，使用GPIO18作为RX1，GPIO17作为TX1
     Serial1.println("+++");
     this->_currentTransferMode=TransferMode::NONE;
@@ -25,8 +26,10 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
 
     // 等待响应
     unsigned long startTime = millis();
-    while (millis() - startTime < 2000) { // 等待最多2秒
-        if (Serial1.available()) {
+    while (millis() - startTime < 2000) 
+    { // 等待最多2秒
+        if (Serial1.available()) 
+        {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
@@ -83,8 +86,10 @@ bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
 
     // 等待响应
     unsigned long startTime = millis();
-    while (millis() - startTime < 2000) { // 等待最多2秒
-        if (Serial1.available()) {
+    while (millis() - startTime < 2000) 
+    { // 等待最多2秒
+        if (Serial1.available()) 
+        {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
@@ -126,14 +131,17 @@ bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
 }
 
 /*设置本地地址*/
-bool LoRaModule::setLocalAddress(uint32_t localAddr) {
+bool LoRaModule::setLocalAddress(uint32_t localAddr) 
+{
     String command = "AT+CADDRSET=" + String(localAddr);
     Serial1.println(command); // 发送配置本地地址的AT指令
 
     // 等待响应
     unsigned long startTime = millis();
-    while (millis() -startTime < 2000) { // 等待最多2秒
-        if (Serial1.available()) {
+    while (millis() -startTime < 2000) 
+    { // 等待最多2秒
+        if (Serial1.available()) 
+        {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
@@ -170,8 +178,10 @@ bool LoRaModule::setTargetAddress(uint32_t targetAddr)
     Serial1.println(command); // 发送配置本地地址的AT指令
     // 等待响应
     unsigned long startTime = millis();
-    while (millis() -startTime < 2000) { // 等待最多2秒
-        if (Serial1.available()) {
+    while (millis() -startTime < 2000) 
+    { // 等待最多2秒
+        if (Serial1.available()) 
+        {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
@@ -202,7 +212,8 @@ bool LoRaModule::setTargetAddress(uint32_t targetAddr)
 }
 
 /*休眠模式*/
-void LoRaModule::setSleepMode(int sleepMode) {
+void LoRaModule::setSleepMode(int sleepMode) 
+{
     String command = "AT+CSLEEP=" + String(sleepMode);
     Serial1.println(command); // 发送设置睡眠模式的AT指令
 }
@@ -227,8 +238,10 @@ bool LoRaModule::sendData(const String &str)
     Serial1.println(str);
     // 等待响应
     unsigned long startTime = millis();
-    while (millis() -startTime < 2000) { // 等待最多2秒
-        if (Serial1.available()) {
+    while (millis() -startTime < 2000) 
+    { // 等待最多2秒
+        if (Serial1.available()) 
+        {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
             // 检查响应内容
@@ -240,4 +253,47 @@ bool LoRaModule::sendData(const String &str)
         }
     }
     return false; // 设置失败
+}
+
+uint64_t LoRaModule::receiveData(RecvInfo& recvinfo)
+{
+    if(this->_currentTransferMode!=TransferMode::RX_MODE)
+    {
+        Serial.println("[Debug Serial]: Current transfer mode is not RX_MODE.");
+        return 0; // 函数退出，返回空字符串
+    }
+    // 等待响应
+    unsigned long startTime = millis();
+    while (millis() -startTime < 10000) 
+    { // 等待最多2秒
+        if (Serial1.available()) 
+        {
+            String response = Serial1.readStringUntil('\n'); // 读取一行响应
+            Serial.println("[LoRa  Serial]:" + response);
+            /**
+             * 一次接受数据的案例：
+             * OnRxDone
+             * Recv:
+             * 1122334455 AABBCC 6677889900
+             * from: 15
+             * rssi = -70, snr = 2
+             */
+            if (response.startsWith("OnRxDone")) 
+            {
+                Serial.println("[Debug Serial]: Receive data successful");
+                // 保存接收到的消息
+                // Serial1.readStringUntil(':'); // 跳过"Recv:"
+                Serial1.readStringUntil('\n');
+                recvinfo.message = Serial1.readStringUntil('\n'); // 读取实际接受的消息数据
+                Serial1.readStringUntil(':'); // 跳过"from:"
+                recvinfo.fromAddr = Serial1.parseInt(); // 读取消息数据的来源地址
+                Serial1.readStringUntil('='); // 跳过"rssi ="
+                recvinfo.rssi = Serial1.parseInt(); // 读取rssi值
+                Serial1.readStringUntil('='); // 跳过"snr ="
+                recvinfo.snr = Serial1.parseInt(); // 读取snr值
+                return recvinfo.message.length(); // 返回读取到的message长度
+            } 
+        }
+    }
+    return 0; // 设置失败
 }

@@ -1,7 +1,8 @@
 #pragma once
 #include <Arduino.h>
 #include <string>
-enum DataRate {
+enum DataRate 
+{
     SF12 = 0, 
     SF11, 
     SF10, 
@@ -12,12 +13,14 @@ enum DataRate {
     SF5
 };
 
-enum Bandwidth {
+enum Bandwidth 
+{
     BW_125KHz = 0, BW_250KHz, BW_500KHz, BW_62_5KHz, BW_41_67KHz,
     BW_31_25KHz, BW_20_83KHz, BW_15_63KHz, BW_10_42KHz, BW_7_81KHz
 };
 
-enum CodeRate {
+enum CodeRate 
+{
     CR_4_5 = 1, CR_4_6, CR_4_7, CR_4_8
 };
 
@@ -26,20 +29,30 @@ enum IqConverted
     IQ_OFF = 0,IQ_ON
 };
 
-enum TransferMode {
+enum TransferMode 
+{
     NONE=-1,
     RX_MODE = 0, 
     TX_MODE=1
 };
 
 
-struct LoRaTransConfigStruct {
+struct LoRaTransConfigStruct 
+{
     long freq; // 频率
     DataRate dataRate; // 速率
     Bandwidth bandwidth; // 带宽
     CodeRate codeRate; // 编码率
     IqConverted iqConverted; // IQ转换功能
     uint8_t power;// 发射功率
+};
+
+struct RecvInfo
+{
+    String message;
+    uint32_t fromAddr;
+    int rssi;
+    int snr;
 };
 
 class LoRaModule {
@@ -50,8 +63,9 @@ public:
     bool setLocalAddress(uint32_t localAddr);    //设置本地地址
     bool setTargetAddress(uint32_t targetAddr);  //设置目标地址
     void setSleepMode(int sleepMode);       //休眠模式
-    void quitTransparent(void);
-    bool sendData(const String& str);
+    void quitTransparent(void);               // 退出穿透模式
+    bool sendData(const String& str);         // 发送数据
+    uint64_t receiveData(RecvInfo& recvinfo); // 接收数据
 
 private:
     TransferMode _currentTransferMode;
