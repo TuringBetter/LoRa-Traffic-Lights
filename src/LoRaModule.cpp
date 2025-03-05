@@ -7,10 +7,8 @@ void LoRaModule::begin() {
 }
 
 /* 设置发送参数 */
-bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig) 
-{
-    if(pConfig==nullptr)
-    {
+bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig) {
+    if(pConfig==nullptr){
         Serial.println("[Debug Serial]:LoRaTxConfigStruct Error");
         return false;
     }
@@ -41,7 +39,8 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
                 _currentTransferMode = TransferMode::TX_MODE;
                 // Serial.println("[Debug Serial]:set local address: " + String(localAddr));
                 return true; // 设置成功
-            } else if (response.indexOf("ERROR") != -1) {
+            } 
+            else if (response.indexOf("ERROR") != -1) {
                 // 如果收到错误响应，则重新发送AT指令
                 Serial.println("[Debug Serial]:Error received, retrying...");
                 Serial1.println(command); // 重新发送AT指令
@@ -49,8 +48,7 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
                 static int retryCount = 0;
                 if (retryCount < 5) 
                     retryCount++;
-                else 
-                {
+                else {
                     Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
                     return false; // 重传次数达到上限，设置失败
                 }
@@ -63,10 +61,8 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
 }
 
 /* 设置接收参数 */
-bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
-{
-    if(pConfig==nullptr)
-    {
+bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig){
+    if(pConfig==nullptr){
         Serial.println("[Debug Serial]:LoRaRxConfigStruct Error");
         return false;
     }
@@ -97,7 +93,8 @@ bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
                 _currentTransferMode = TransferMode::RX_MODE;
 
                 return true; // 设置成功
-            } else if (response.indexOf("ERROR") != -1) {
+            } 
+            else if (response.indexOf("ERROR") != -1) {
                 // 如果收到错误响应，则重新发送AT指令
                 Serial.println("[Debug Serial]:Error received, retrying...");
                 Serial1.println(command); // 重新发送AT指令
@@ -105,8 +102,7 @@ bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
                 static int retryCount = 0;
                 if (retryCount < 5) 
                     retryCount++;
-                else 
-                {
+                else {
                     Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
                     return false; // 重传次数达到上限，设置失败
                 }
@@ -134,7 +130,8 @@ bool LoRaModule::setLocalAddress(uint32_t localAddr) {
                 Serial.println("[Debug Serial]:set local address: " + String(localAddr));
                 _localAddr=localAddr;
                 return true; // 设置成功
-            } else if (response.startsWith("+CMD ERROR")) {
+            } 
+            else if (response.startsWith("+CMD ERROR")) {
                 // 如果收到错误响应，则重新发送AT指令
                 Serial.println("[Debug Serial]:Error received, retrying...");
                 Serial1.println(command); // 重新发送AT指令
@@ -142,7 +139,8 @@ bool LoRaModule::setLocalAddress(uint32_t localAddr) {
                 static int retryCount = 0;
                 if (retryCount < 5) {
                     retryCount++;
-                } else {
+                } 
+                else {
                     Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
                     return false; // 重传次数达到上限，设置失败
                 }
@@ -153,8 +151,7 @@ bool LoRaModule::setLocalAddress(uint32_t localAddr) {
 }
 
 /* 设置目标地址 */
-bool LoRaModule::setTargetAddress(uint32_t targetAddr) 
-{
+bool LoRaModule::setTargetAddress(uint32_t targetAddr) {
     String command = "AT+CTXADDRSET=" + String(targetAddr);
     Serial1.println(command); // 发送配置本地地址的AT指令
     // 等待响应
@@ -168,7 +165,8 @@ bool LoRaModule::setTargetAddress(uint32_t targetAddr)
                 Serial.println("[Debug Serial]:set target address: " + String(targetAddr));
                 _targetAddr=targetAddr;
                 return true; // 设置成功
-            } else if (response.startsWith("+CMD ERROR")) {
+            } 
+            else if (response.startsWith("+CMD ERROR")) {
                 // 如果收到错误响应，则重新发送AT指令
                 Serial.println("[Debug Serial]:Error received, retrying...");
                 Serial1.println(command); // 重新发送AT指令
@@ -195,12 +193,12 @@ void LoRaModule::setSleepMode(int sleepMode) {
 /* 发射数据 */
 bool LoRaModule::sendData(const String &sendData) {
     if (sendData.isEmpty()) {
-        Serial.println("[Debug Serial]: Data is empty, not sending.");
+        Serial.println("[Debug Serial]:Data is empty, not sending.");
         return false; // 如果数据为空，返回false
     }
     
     Serial1.println(sendData); // 发送数据
-    Serial.println("[LoRa Serial]: Sent data: " + sendData);
+    Serial.println("[LoRa  Serial]:Sent data: " + sendData);
     
     // 等待响应
     unsigned long startTime = millis();
