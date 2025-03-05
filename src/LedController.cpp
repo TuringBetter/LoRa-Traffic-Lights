@@ -40,9 +40,13 @@ void LedController::turnOn() {
 
 // 关闭LED
 void LedController::turnOff() {
+    Serial.println("step_1");
     _isOn = false;                  // 更新状态为关闭
+    Serial.println("step_2");
     _isBlinking = false;            // 关闭闪烁模式
+    Serial.println("step_3");
     digitalWrite(_pin, LOW);        // 确保LED关闭
+    Serial.println(_pin);
 }
 
 // 更新LED状态（非阻塞）

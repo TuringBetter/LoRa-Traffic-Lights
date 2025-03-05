@@ -5,7 +5,7 @@
 // put function declarations here:
 
 LoRaModule lora;
-LedController led(4);  // 使用GPIO4作为LED引脚
+//LedController led(4);  // 使用GPIO4作为LED引脚
 
 void setup() {
   Serial.begin(115200);
@@ -92,28 +92,28 @@ void loop() {
     Serial1.readStringUntil('\n');
     Serial1.readStringUntil('\n');
     String command = Serial1.readStringUntil('\n');
+    command.trim();// 去除空格和换行符
     Serial.println(command);
     // 解析命令
     if (command.startsWith("freq")) {
       // 设置闪烁频率，格式：freq 1000
       int freq = command.substring(5).toInt();
       led.setBlinkFrequency(freq);
-      Serial1.println("Set LED frequency to " + String(freq) + "ms");
+      Serial.println("[Debug Serial]:Set LED frequency to " + String(freq) + "ms");
     }
     else if (command == "on") {
       led.turnOn();
-      Serial1.println("LED turned on");
+      Serial.println("[Debug Serial]:LED turned on");
     }
     else if (command == "off") {
-      Serial.println("[Debug Serial]:turn into off.");
       led.turnOff();
-      Serial1.println("LED turned off");
+      Serial.println("[Debug Serial]:LED turned off");
     }
     else if (command.startsWith("bright")) {
       // 设置亮度，格式：bright 255
       int brightness = command.substring(7).toInt();
       led.setBrightness(brightness);
-      Serial1.println("Set LED brightness to " + String(brightness));
+      Serial.println("[Debug Serial]:Set LED brightness to " + String(brightness));
     }
   }
   /**/
