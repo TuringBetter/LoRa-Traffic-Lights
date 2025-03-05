@@ -32,12 +32,12 @@ enum TransferMode {
 
 
 struct LoRaTransConfigStruct {
-    long freq; // 频率
-    DataRate dataRate; // 速率
-    Bandwidth bandwidth; // 带宽
-    CodeRate codeRate; // 编码率
-    IqConverted iqConverted; // IQ转换功能
-    uint8_t power;// 发射功率
+    long freq;              // 频率
+    DataRate dataRate;      // 速率
+    Bandwidth bandwidth;    // 带宽
+    CodeRate codeRate;      // 编码率
+    IqConverted iqConverted;// IQ转换功能
+    uint8_t power;          // 发射功率
 };
 
 class LoRaModule {
@@ -48,6 +48,7 @@ public:
     bool setLocalAddress(uint32_t localAddr);    //设置本地地址
     bool setTargetAddress(uint32_t targetAddr);  //设置目标地址
     void setSleepMode(int sleepMode);       //休眠模式
+    bool sendData(const String &sendData);  //发射数据
 
 private:
     TransferMode _currentTransferMode;

@@ -1,19 +1,20 @@
 #include "LoRaModule.h"
 
-/*初始化LoRa模块*/
+/* 初始化LoRa模块 */
 void LoRaModule::begin() {
     Serial1.begin(9600, SERIAL_8N1, 18, 17); // 初始化UART，使用GPIO18作为RX1，GPIO17作为TX1
+    Serial1.println("+++");
 }
 
-/*设置发送参数*/
+/* 设置发送参数 */
 bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig) 
 {
     if(pConfig==nullptr)
     {
-        Serial.println("[Debug Serial]:LoRaRxConfigStruct Error");
+        Serial.println("[Debug Serial]:LoRaTxConfigStruct Error");
         return false;
     }
-    String command = "AT+CTXS=" + String(pConfig->freq)
+    String command = "AT+CTX="  + String(pConfig->freq)
                         +  ","  + String(pConfig->dataRate) 
                         +  ","  + String(pConfig->bandwidth) 
                         +  ","  + String(pConfig->codeRate) 
@@ -61,7 +62,7 @@ bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig)
     return false; // 设置失败
 }
 
-/*设置接收参数*/
+/* 设置接收参数 */
 bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
 {
     if(pConfig==nullptr)
@@ -117,14 +118,14 @@ bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
     return false; // 设置失败
 }
 
-/*设置本地地址*/
+/* 设置本地地址 */
 bool LoRaModule::setLocalAddress(uint32_t localAddr) {
     String command = "AT+CADDRSET=" + String(localAddr);
-    Serial1.println(command); // 发送配置本地地址的AT指令
+    Serial1.println(command);   // 发送配置本地地址的AT指令
 
     // 等待响应
     unsigned long startTime = millis();
-    while (millis() -startTime < 2000) { // 等待最多2秒
+    while (millis() -startTime < 2000) {        // 等待最多2秒
         if (Serial1.available()) {
             String response = Serial1.readStringUntil('\n'); // 读取一行响应
             Serial.println("[LoRa  Serial]:" + response);
@@ -151,7 +152,7 @@ bool LoRaModule::setLocalAddress(uint32_t localAddr) {
     return false; // 设置失败
 }
 
-/*设置目标地址*/
+/* 设置目标地址 */
 bool LoRaModule::setTargetAddress(uint32_t targetAddr) 
 {
     String command = "AT+CTXADDRSET=" + String(targetAddr);
@@ -189,4 +190,31 @@ bool LoRaModule::setTargetAddress(uint32_t targetAddr)
 void LoRaModule::setSleepMode(int sleepMode) {
     String command = "AT+CSLEEP=" + String(sleepMode);
     Serial1.println(command); // 发送设置睡眠模式的AT指令
+}
+
+/* 发射数据 */
+bool LoRaModule::sendData(const String &sendData) {
+    if (sendData.isEmpty()) {
+        Serial.println("[Debug Serial]: Data is empty, not sending.");
+        return false; // 如果数据为空，返回false
+    }
+    
+    Serial1.println(sendData); // 发送数据
+    Serial.println("[LoRa Serial]: Sent data: " + sendData);
+    
+    // 等待响应
+    unsigned long startTime = millis();
+    while (millis() - startTime < 2000) { // 等待最多2秒
+        if (Serial1.available()) {
+            String response = Serial1.readStringUntil('\n'); // 读取一行响应
+            //Serial.println("[LoRa Serial]: Response: " + response);
+            // 检查响应内容
+            if (response.indexOf("OnTxDone") != -1) { // 假设响应中包含"OnTxDone"表示成功
+                //Serial.println("[Debug Serial]: Send completed.");
+                return true; // 发送成功
+            }
+        }
+    }
+    Serial.println("[Debug Serial]: UART Time Out Error");
+    return false; // 发送失败
 }
