@@ -7,11 +7,15 @@ void printEspId();
 
 // LoRaModule lora;
 // Led led;
-Laser laser;
+Laser laser(Serial1);
 
 void setup() {
   Serial.begin(115200);
+  Serial1.begin(921600, SERIAL_8N1, 18, 17);
   laser.begin();
+  laser.sendReadCommand();
+  Serial.println("System initialized");
+
   // lora.begin(); // 初始化LoRa模块并读取启动信息
   // led.begin(4);
 
@@ -51,18 +55,14 @@ void setup() {
 }
 
 void loop() {
-  if (Serial1.available() >= 23) { // 确保有足够的数据（22 字节）
-    uint8_t buffer[25];
-    Serial1.readBytes(buffer, 23); // 读取一帧数据
-    uint8_t data[3];
-    for (int i = 0; i < 2; i++) {
-        data[i] = buffer[13 + i];
-    }
-    // 解析主峰质心
-    uint16_t mainPeakCentroid = (data[1] << 8) | data[0]; // 低位在前，高位在后
-    Serial.print("Main Peak Centroid: ");
-    Serial.println(mainPeakCentroid);
+  int16_t distance = laser.receiveReadResponse();
+  if (distance != -1) {
+    Serial.print("测量的距离: ");
+    Serial.println(distance);
   }
+  
+  // 添加一个小延时，避免过于频繁的读取
+  delay(10);
 }
 
 // put function definitions here:
