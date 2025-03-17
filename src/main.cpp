@@ -1,10 +1,25 @@
 #include <Arduino.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
+
 #include "LoRaModule.h"
 #include "LedModule.h"
 #include "LaserModule.h"
 // put function declarations here:
 void printEspId();
 
+
+/**定义引脚**/
+#define TFT_RST   15  // 复位RST
+#define TFT_DC    16  // 数据/命令D/C
+#define TFT_MOSI  17  // SPI 数据SDA
+#define TFT_SCK   18  // SPI 时钟SCL
+#define TFT_CS    21   // 片选CS
+
+
+// **初始化屏幕**
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 // LoRaModule lora;
 // Led led;
 Laser laser(Serial1);
@@ -18,7 +33,17 @@ void setup() {
 
   // lora.begin(); // 初始化LoRa模块并读取启动信息
   // led.begin(4);
+  // **初始化 SPI**
+    SPI.begin(TFT_SCK, -1, TFT_MOSI, TFT_CS);
 
+    // **初始化 ST7735S**
+    tft.initR(INITR_BLACKTAB); // 选择 ST7735S 类型
+    tft.setRotation(1); // 旋转方向
+
+    // **填充屏幕**
+    tft.fillScreen(ST77XX_BLACK);
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(2);
   /*
   // 测试设置本地地址
   int localAddress = 12; // 要设置的本地地址
@@ -55,10 +80,20 @@ void setup() {
 }
 
 void loop() {
+
+  // **动态显示**
+    tft.fillScreen(ST77XX_BLUE);
+    delay(500);
+    
+    tft.fillScreen(ST77XX_RED);
+    delay(500);
+
   int16_t distance = laser.receiveReadResponse();
   if (distance != -1) {
     Serial.print("测量的距离: ");
     Serial.println(distance);
+    tft.setCursor(10, 10);
+    tft.println(distance);
   }
   
   // 添加一个小延时，避免过于频繁的读取
