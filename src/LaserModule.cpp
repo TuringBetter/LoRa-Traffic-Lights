@@ -47,10 +47,6 @@ void Laser::sendoverCommand(){
 
 int16_t Laser::receiveReadResponse(){
     int available = _serial.available();
-    /*
-    Serial.print("Available bytes: ");
-    Serial.println(available);
-    */
     // 如果数据太多，清空缓冲区
     if (available >= READ_DATA_LENGTH + 10) {
         Serial.println("Buffer overflow, clearing...");
@@ -66,24 +62,12 @@ int16_t Laser::receiveReadResponse(){
         uint8_t buffer[25];
         _serial.readBytes(buffer, READ_DATA_LENGTH);
         
-        /*
-        // 打印接收到的原始数据
-        Serial.print("Received data: ");
-        for(int i = 0; i < READ_DATA_LENGTH; i++) {
-            Serial.print(buffer[i], HEX);
-            Serial.print(" ");
-        }
-        Serial.println();
-        */
         const size_t data_length = READ_DATA_LENGTH - 2;
         uint8_t *datapart = buffer;
         uint16_t received_crc = (buffer[data_length] << 8) | buffer[data_length + 1];
         uint16_t computed_crc = calculateCRC16(datapart, data_length);
         
-        // Serial.print("Computed CRC: 0x");
-        // Serial.println(computed_crc, HEX);
-        // Serial.print("Received CRC: 0x");
-        // Serial.println(received_crc, HEX);
+
         
         uint8_t mpcdata[3];
         if(computed_crc == received_crc)
