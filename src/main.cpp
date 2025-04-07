@@ -1,51 +1,82 @@
 #include <Arduino.h>
-#include "LoRaModule.h"
+
 #include "LedModule.h"
-#include "LaserModule.h"
-#include "AccelerometerModule.h"
 
-#define I2C_SDA 6
-#define I2C_SCL 5
+// 创建LED模块实例
+LedModule ledModule;
 
-Accelerometer accelerometer;
+// 测试状态变量
+unsigned long lastStateChange = 0;
+uint8_t currentTestState = 0;
 
 // put function declarations here:
 void printEspId();
 
-
-
 void setup() {
   Serial.begin(115200);
-  Wire.begin(I2C_SDA, I2C_SCL);
+  Serial.println("LED模块测试程序启动");
   
-  if (!accelerometer.begin(Accelerometer::RANGE_2G)) 
-  {
-      Serial.println("Failed to initialize accelerometer!");
-      while(1);
-  }
-  Serial.println("Succeeded to initialize accelerometer!");
+  // 初始化LED为红色,默认亮度500,不闪烁
+  ledModule.setColor(LedColor::RED);
+  ledModule.setBrightness(500);
+  ledModule.setFrequency(0);
 }
 
 void loop() {
-    int16_t x, y, z;
-    accelerometer.readRaw(x, y, z);
-
-    Serial.print("Raw Data - X:");
-    Serial.print(x);
-    Serial.print(" Y:");
-    Serial.print(y);
-    Serial.print(" Z:");
-    Serial.println(z);
-
-    float scale = accelerometer.getScaleFactor();
-    Serial.print("Acceleration(g) - X:");
-    Serial.print(x * scale, 4);
-    Serial.print(" Y:");
-    Serial.print(y * scale, 4);
-    Serial.print(" Z:");
-    Serial.println(z * scale, 4);
-
-    delay(500);
+  unsigned long currentTime = millis();
+  
+  // 每5秒切换一次测试状态
+  if (currentTime - lastStateChange >= 5000) {
+    currentTestState = (currentTestState + 1) % 6;  // 6个测试状态循环
+    lastStateChange = currentTime;
+    
+    switch (currentTestState) {
+      case 0:
+        Serial.println("测试1: 红色LED,亮度500,不闪烁");
+        ledModule.setColor(LedColor::RED);
+        ledModule.setBrightness(500);
+        ledModule.setFrequency(0);
+        break;
+        
+      case 1:
+        Serial.println("测试2: 红色LED,亮度2000,30Hz闪烁");
+        ledModule.setColor(LedColor::RED);
+        ledModule.setBrightness(2000);
+        ledModule.setFrequency(30);
+        break;
+        
+      case 2:
+        Serial.println("测试3: 红色LED,亮度7000,60Hz闪烁");
+        ledModule.setColor(LedColor::RED);
+        ledModule.setBrightness(7000);
+        ledModule.setFrequency(60);
+        break;
+        
+      case 3:
+        Serial.println("测试4: 黄色LED,亮度1000,不闪烁");
+        ledModule.setColor(LedColor::YELLOW);
+        ledModule.setBrightness(1000);
+        ledModule.setFrequency(0);
+        break;
+        
+      case 4:
+        Serial.println("测试5: 黄色LED,亮度4000,120Hz闪烁");
+        ledModule.setColor(LedColor::YELLOW);
+        ledModule.setBrightness(4000);
+        ledModule.setFrequency(120);
+        break;
+        
+      case 5:
+        Serial.println("测试6: 黄色LED,亮度2000,30Hz闪烁");
+        ledModule.setColor(LedColor::YELLOW);
+        ledModule.setBrightness(2000);
+        ledModule.setFrequency(30);
+        break;
+    }
+  }
+  
+  // 更新LED状态（实现闪烁效果）
+  ledModule.update();
 }
 
 // put function definitions here:
