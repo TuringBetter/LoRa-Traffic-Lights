@@ -1,6 +1,6 @@
 #include "LedModule.h"
 
-LedModule::LedModule() : 
+Led::Led() : 
     currentColor(LedColor::RED),
     brightness(500),
     frequency(30),
@@ -24,7 +24,7 @@ LedModule::LedModule() :
     updatePWM();
 }
 
-void LedModule::setColor(LedColor color) {
+void Led::setColor(LedColor color) {
     if (currentColor != color) {
         // 关闭当前LED
         ledcWrite(currentColor == LedColor::RED ? 0 : 1, 0);
@@ -34,7 +34,7 @@ void LedModule::setColor(LedColor color) {
     }
 }
 
-void LedModule::setBrightness(uint32_t value) {
+void Led::setBrightness(uint32_t value) {
     // 验证亮度值是否合法
     if (value != 500 && value != 1000 && value != 2000 && 
         value != 4000 && value != 7000) {
@@ -45,7 +45,7 @@ void LedModule::setBrightness(uint32_t value) {
     updatePWM();
 }
 
-void LedModule::setFrequency(uint16_t freq) {
+void Led::setFrequency(uint16_t freq) {
     // 验证频率值是否合法
     if (freq != 0 && freq != 30 && freq != 60 && freq != 120) {
         return;
@@ -61,7 +61,7 @@ void LedModule::setFrequency(uint16_t freq) {
     }
 }
 
-void LedModule::update() {
+void Led::update() {
     if (!isBlinking) {
         return;
     }
@@ -74,7 +74,7 @@ void LedModule::update() {
     }
 }
 
-void LedModule::updatePWM() {
+void Led::updatePWM() {
     uint32_t pwmValue = currentState ? brightness : 0;
     uint8_t channel = (currentColor == LedColor::RED) ? 0 : 1;
     
@@ -83,6 +83,6 @@ void LedModule::updatePWM() {
     ledcWrite(channel, pwmValue);
 }
 
-uint8_t LedModule::getCurrentPin() const {
+uint8_t Led::getCurrentPin() const {
     return (currentColor == LedColor::RED) ? RED_PIN : YELLOW_PIN;
 }

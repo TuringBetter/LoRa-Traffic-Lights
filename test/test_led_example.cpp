@@ -3,7 +3,7 @@
 #include "LedModule.h"
 
 // 创建LED模块实例
-LedModule ledModule;
+Led ledModule;
 
 // 测试状态变量
 unsigned long lastStateChange = 0;

@@ -6,7 +6,7 @@ enum class LedColor {
     YELLOW
 };
 
-class LedModule {
+class Led {
 private:
     static const uint8_t RED_PIN = 7;    // 使用GPIO7作为红色LED控制
     static const uint8_t YELLOW_PIN = 8; // 使用GPIO8作为黄色LED控制
@@ -22,7 +22,7 @@ private:
     uint8_t getCurrentPin() const;
 
 public:
-    LedModule();
+    Led();
     
     // 设置当前LED颜色
     void setColor(LedColor color);

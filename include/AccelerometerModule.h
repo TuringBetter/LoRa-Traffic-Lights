@@ -16,6 +16,9 @@ public:
     float getScaleFactor() const;
 
 private:
+    static const uint8_t I2C_SDA_PIN = 6;
+    static const uint8_t I2C_SCL_PIN = 5; 
+
     uint8_t _address;
     void writeRegister(uint8_t reg, uint8_t value);
     uint8_t readRegister(uint8_t reg) const;

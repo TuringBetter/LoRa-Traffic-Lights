@@ -4,6 +4,7 @@
 Accelerometer::Accelerometer(uint8_t address) : _address(address) {}
 
 bool Accelerometer::begin(Range range) {
+    Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
     writeRegister(0x20, 0x47);  // CTRL_REG1: 50Hz, XYZ enable
     writeRegister(0x23, static_cast<uint8_t>(range) << 4);  // CTRL_REG4: Set range
     

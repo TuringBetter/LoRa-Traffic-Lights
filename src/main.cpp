@@ -1,82 +1,31 @@
 #include <Arduino.h>
+#include "TrafficLightController.h"
 
-#include "LedModule.h"
-
-// 创建LED模块实例
-LedModule ledModule;
-
-// 测试状态变量
-unsigned long lastStateChange = 0;
-uint8_t currentTestState = 0;
-
-// put function declarations here:
-void printEspId();
+// 创建交通灯控制器实例
+// 使用ESP32的MAC地址作为交通灯ID
+TrafficLightController* trafficLightController = nullptr;
 
 void setup() {
-  Serial.begin(115200);
-  Serial.println("LED模块测试程序启动");
-  
-  // 初始化LED为红色,默认亮度500,不闪烁
-  ledModule.setColor(LedColor::RED);
-  ledModule.setBrightness(500);
-  ledModule.setFrequency(0);
+    // 初始化串口
+    Serial.begin(115200);
+    Serial.println("Traffic Light System Starting...");
+    
+    // 获取ESP32的MAC地址作为交通灯ID
+    uint64_t chipId = ESP.getEfuseMac();
+    uint32_t lightId = (uint32_t)chipId;  // 使用低32位作为ID
+    
+    // 创建交通灯控制器
+    trafficLightController = new TrafficLightController(lightId);
+    
+    // 初始化交通灯控制器
+    trafficLightController->begin();
 }
 
 void loop() {
-  unsigned long currentTime = millis();
-  
-  // 每5秒切换一次测试状态
-  if (currentTime - lastStateChange >= 5000) {
-    currentTestState = (currentTestState + 1) % 6;  // 6个测试状态循环
-    lastStateChange = currentTime;
-    
-    switch (currentTestState) {
-      case 0:
-        Serial.println("测试1: 红色LED,亮度500,不闪烁");
-        ledModule.setColor(LedColor::RED);
-        ledModule.setBrightness(500);
-        ledModule.setFrequency(0);
-        break;
-        
-      case 1:
-        Serial.println("测试2: 红色LED,亮度2000,30Hz闪烁");
-        ledModule.setColor(LedColor::RED);
-        ledModule.setBrightness(2000);
-        ledModule.setFrequency(30);
-        break;
-        
-      case 2:
-        Serial.println("测试3: 红色LED,亮度7000,60Hz闪烁");
-        ledModule.setColor(LedColor::RED);
-        ledModule.setBrightness(7000);
-        ledModule.setFrequency(60);
-        break;
-        
-      case 3:
-        Serial.println("测试4: 黄色LED,亮度1000,不闪烁");
-        ledModule.setColor(LedColor::YELLOW);
-        ledModule.setBrightness(1000);
-        ledModule.setFrequency(0);
-        break;
-        
-      case 4:
-        Serial.println("测试5: 黄色LED,亮度4000,120Hz闪烁");
-        ledModule.setColor(LedColor::YELLOW);
-        ledModule.setBrightness(4000);
-        ledModule.setFrequency(120);
-        break;
-        
-      case 5:
-        Serial.println("测试6: 黄色LED,亮度2000,30Hz闪烁");
-        ledModule.setColor(LedColor::YELLOW);
-        ledModule.setBrightness(2000);
-        ledModule.setFrequency(30);
-        break;
+    // 更新交通灯控制器
+    if (trafficLightController != nullptr) {
+        trafficLightController->update();
     }
-  }
-  
-  // 更新LED状态（实现闪烁效果）
-  ledModule.update();
 }
 
 // put function definitions here:
