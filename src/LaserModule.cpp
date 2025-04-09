@@ -47,10 +47,6 @@ void Laser::sendoverCommand(){
 
 int16_t Laser::receiveReadResponse(){
     int available = Serial1.available();
-    /*
-    Serial.print("Available bytes: ");
-    Serial.println(available);
-    */
     // 如果数据太多，清空缓冲区
     if (available >= READ_DATA_LENGTH + 10) {
         Serial.println("Buffer overflow, clearing...");

@@ -66,7 +66,7 @@ private:
     LoRaModule      _loraModule;
     
     // 配置参数
-    static const int        VEHICLE_DETECTION_THRESHOLD = 100;  // 车辆检测阈值（厘米）
+    static const int        VEHICLE_DETECTION_THRESHOLD = 500;  // 车辆检测阈值（厘米）
     static const int        COLLISION_THRESHOLD = 10;         // 碰撞检测阈值
     static const uint32_t   VEHICLE_TIMEOUT = 10000;       // 车辆超时时间（毫秒）
     static const uint32_t   COLLISION_TIMEOUT = 2000;      // 碰撞超时时间（毫秒）

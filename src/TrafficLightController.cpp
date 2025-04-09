@@ -40,6 +40,7 @@ void TrafficLightController::begin() {
     _loraModule.setLocalAddress(_lightId);
     */
     // 创建任务
+    /*
     xTaskCreatePinnedToCore(
         accelerometerTask,
         "AccelerometerTask",
@@ -49,7 +50,7 @@ void TrafficLightController::begin() {
         &_accelerometerTaskHandle,
         1
     );
-    /*
+    */
     xTaskCreatePinnedToCore(
         laserTask,
         "LaserTask",
@@ -59,7 +60,6 @@ void TrafficLightController::begin() {
         &_laserTaskHandle,
         1
     );
-    */
     /*
     xTaskCreatePinnedToCore(
         loraTask,
@@ -118,8 +118,6 @@ void TrafficLightController::laserTask(void* parameter) {
     controller->_laser.sendReadCommand();
     Serial.println("Laser module initialized and set to continuous measurement mode");
     
-    // 记录上次处理时间
-    uint32_t lastProcessTime = 0;
     
     while (true) {
         // 读取距离数据
@@ -129,18 +127,6 @@ void TrafficLightController::laserTask(void* parameter) {
         if (distance >= 0) {
             controller->processLaserData(distance);
         }
-        
-        // 计算距离上次处理的时间
-        uint32_t currentTime = millis();
-        uint32_t elapsedTime = currentTime - lastProcessTime;
-        
-        // 如果距离上次处理已经过了10ms（对应100Hz的采样率），则更新上次处理时间
-        if (elapsedTime >= 10) {
-            lastProcessTime = currentTime;
-        }
-        
-        // 任务延时，确保不会错过数据
-        // 由于激光模块每秒发送100帧，即每10ms一帧，所以延时应该小于10ms
         vTaskDelay(pdMS_TO_TICKS(5));  // 5ms延时，确保能捕获所有数据
     }
 }
