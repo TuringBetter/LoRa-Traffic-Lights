@@ -7,11 +7,10 @@ void printEspId();
 
 // LoRaModule lora;
 // Led led;
-Laser laser(Serial1);
+Laser laser;
 
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(921600, SERIAL_8N1, 18, 17);
   laser.begin();
   laser.sendReadCommand();
   Serial.println("System initialized");

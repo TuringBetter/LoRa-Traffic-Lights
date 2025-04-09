@@ -29,24 +29,24 @@ static uint16_t calculateCRC16(uint8_t *data, size_t length){
 
 void Laser::begin()
 {
-    _serial.begin(_baudRate);
+    Serial1.begin(921600, SERIAL_8N1, RX_PIN, TX_PIN);
     crc16_init();
 }
 
 void Laser::sendReadCommand()
 {
     static uint8_t data[] = {0xA5, 0x03, 0x20, 0x01, 0x00, 0x00, 0x00, 0x02, 0x6E};
-    _serial.write(data, sizeof(data));
+    Serial1.write(data, sizeof(data));
 }
 
 void Laser::sendoverCommand(){
     static uint8_t data[] = {0xA5, 0x03, 0x20, 0x02, 0x00, 0x00, 0x00, 0x46, 0x6E};
-    _serial.write(data, sizeof(data));
+    Serial1.write(data, sizeof(data));
 }
 
 
 int16_t Laser::receiveReadResponse(){
-    int available = _serial.available();
+    int available = Serial1.available();
     /*
     Serial.print("Available bytes: ");
     Serial.println(available);
@@ -54,8 +54,8 @@ int16_t Laser::receiveReadResponse(){
     // 如果数据太多，清空缓冲区
     if (available >= READ_DATA_LENGTH + 10) {
         Serial.println("Buffer overflow, clearing...");
-        while(_serial.available()) {
-            _serial.read();
+        while(Serial1.available()) {
+            Serial1.read();
         }
         return -1;
     }
@@ -64,7 +64,7 @@ int16_t Laser::receiveReadResponse(){
     if (available >= READ_DATA_LENGTH && available < READ_DATA_LENGTH+10) 
     {
         uint8_t buffer[25];
-        _serial.readBytes(buffer, READ_DATA_LENGTH);
+        Serial1.readBytes(buffer, READ_DATA_LENGTH);
         
         /*
         // 打印接收到的原始数据
