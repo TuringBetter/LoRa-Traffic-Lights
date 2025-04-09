@@ -41,6 +41,29 @@ float Accelerometer::getScaleFactor() const {
     }
 }
 
+void Accelerometer::processDate(int16_t x, int16_t y, int16_t z)
+{
+    static float scale{0.061f / 1000};
+    // 计算加速度的绝对值
+    double acceleration = abs(x * scale)*abs(x * scale) + abs(y * scale)*abs(y * scale) + abs(z * scale)*abs(z * scale);
+
+    // 检查是否检测到碰撞
+    if (acceleration > COLLISION_THRESHOLD) {
+        if (!_collisionDetected) {
+            _collisionDetected = true;
+            _lastCollisionDetectionTime = millis();
+            
+            // 打印碰撞信息
+            Serial.printf("Collision detected! Acceleration: %.3lf\n", acceleration);
+        }
+    } else {
+        // 检查碰撞状态是否已经恢复
+        if (_collisionDetected && (millis() - _lastCollisionDetectionTime > COLLISION_TIMEOUT)) {
+            _collisionDetected = false;
+        }
+    }
+}
+
 void Accelerometer::writeRegister(uint8_t reg, uint8_t value) {
     Wire.beginTransmission(_address);
     Wire.write(reg);
