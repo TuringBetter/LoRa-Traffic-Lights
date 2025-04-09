@@ -10,8 +10,7 @@ TrafficLightController::TrafficLightController(uint32_t lightId)
         _vehicleDetected(false),
         _collisionDetected(false),
         _lastVehicleDetectionTime(0),
-        _lastCollisionDetectionTime(0),
-        _laser(Serial2, 921600) {
+        _lastCollisionDetectionTime(0){
     
     // 创建互斥锁
     _stateMutex = xSemaphoreCreateMutex();
@@ -20,14 +19,15 @@ TrafficLightController::TrafficLightController(uint32_t lightId)
 // 初始化函数
 void TrafficLightController::begin() {
     // 初始化串口
-    Serial.begin(115200);
     Serial.println("Traffic Light Controller Initializing...");
     
     // 打印ESP32 ID
+    /*
     uint64_t chipId = ESP.getEfuseMac();
     uint32_t chipId_high = (uint32_t)(chipId >> 32);
     uint32_t chipId_low = (uint32_t)chipId;
     Serial.printf("ESP32 Chip ID = %08X%08X\n", chipId_high, chipId_low);
+    */
     
     // 初始化LED模块
     _ledModule.setColor(LedColor::YELLOW);
@@ -37,13 +37,13 @@ void TrafficLightController::begin() {
     // 初始化加速度计
     if (!_accelerometer.begin())
         Serial.println("Failed to initialize accelerometer!");
+    Serial.println("accelerometer module initialized");
     
     // 初始化激光测距模块
     _laser.begin();
-    // 发送一次读取命令，使激光模块进入连续测量模式
-    _laser.sendReadCommand();
-    Serial.println("Laser module initialized and set to continuous measurement mode");
+    Serial.println("Laser module initialized");
     
+    /*
     // 初始化LoRa模块
     _loraModule.begin();
     
@@ -60,7 +60,7 @@ void TrafficLightController::begin() {
     _loraModule.setTxConfig(&txConfig);
     _loraModule.setRxConfig(&txConfig);
     _loraModule.setLocalAddress(_lightId);
-    
+    */
     // 创建任务
     xTaskCreatePinnedToCore(
         accelerometerTask,
@@ -81,7 +81,7 @@ void TrafficLightController::begin() {
         &_laserTaskHandle,
         1
     );
-    
+    /*
     xTaskCreatePinnedToCore(
         loraTask,
         "LoRaTask",
@@ -91,7 +91,7 @@ void TrafficLightController::begin() {
         &_loraTaskHandle,
         1
     );
-    
+    */
     xTaskCreatePinnedToCore(
         ledTask,
         "LedTask",
@@ -311,6 +311,7 @@ void TrafficLightController::processLoRaMessage(const RecvInfo& recvInfo) {
 
 // 发送LoRa消息
 void TrafficLightController::sendLoRaMessage(MessageType type, uint32_t targetId, const String& payload) {
+    /*
     // 设置目标地址
     _loraModule.setTargetAddress(targetId);
     
@@ -326,6 +327,8 @@ void TrafficLightController::sendLoRaMessage(MessageType type, uint32_t targetId
     
     // 发送消息
     _loraModule.sendData(message);
+    */
+    Serial.println("Send message to "+targetId);
 }
 
 // 处理远程控制命令
