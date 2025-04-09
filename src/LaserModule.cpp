@@ -47,6 +47,11 @@ void Laser::sendoverCommand(){
 
 int16_t Laser::receiveReadResponse(){
     int available = Serial1.available();
+    if (available<READ_DATA_LENGTH)
+    {
+        Serial.println("The length of the data is insufficient");
+        return -1;
+    }
     // 如果数据太多，清空缓冲区
     if (available >= READ_DATA_LENGTH + 10) {
         Serial.println("Buffer overflow, clearing...");
@@ -57,35 +62,29 @@ int16_t Laser::receiveReadResponse(){
     }
     
     int16_t mainPeakCentroid;
-    if (available >= READ_DATA_LENGTH && available < READ_DATA_LENGTH+10) 
-    {
-        uint8_t buffer[25];
-        Serial1.readBytes(buffer, READ_DATA_LENGTH);
-        
-        const size_t data_length = READ_DATA_LENGTH - 2;
-        uint8_t *datapart = buffer;
-        uint16_t received_crc = (buffer[data_length] << 8) | buffer[data_length + 1];
-        uint16_t computed_crc = calculateCRC16(datapart, data_length);
-        
 
-        
-        uint8_t mpcdata[3];
-        if(computed_crc == received_crc)
-        {
-            for (int i = 0; i < 2; i++) 
-                mpcdata[i] = buffer[13 + i];
-            mainPeakCentroid = (mpcdata[1] << 8) | mpcdata[0];
-            return mainPeakCentroid;
-        }
-        else
-        {
-            Serial.println("CRC ERROR");
-            return -1;
-        }
+    uint8_t buffer[25];
+    Serial1.readBytes(buffer, READ_DATA_LENGTH);
+    
+    const size_t data_length = READ_DATA_LENGTH - 2;
+    uint8_t *datapart = buffer;
+    uint16_t received_crc = (buffer[data_length] << 8) | buffer[data_length + 1];
+    uint16_t computed_crc = calculateCRC16(datapart, data_length);
+    
+
+    
+    uint8_t mpcdata[3];
+    if(computed_crc == received_crc)
+    {
+        for (int i = 0; i < 2; i++) 
+            mpcdata[i] = buffer[13 + i];
+        mainPeakCentroid = (mpcdata[1] << 8) | mpcdata[0];
+        return mainPeakCentroid;
     }
     else
     {
-        Serial.println("Data length out of range");
+        Serial.println("CRC ERROR");
         return -1;
     }
+    
 }
