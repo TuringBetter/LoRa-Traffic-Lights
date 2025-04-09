@@ -49,17 +49,18 @@ int16_t Laser::receiveReadResponse(){
     int available = Serial1.available();
     if (available<READ_DATA_LENGTH)
     {
-        Serial.println("The length of the data is insufficient");
+        Serial.print("The length of the data is insufficient,available= ");
+        Serial.println(available);
         return -1;
     }
     // 如果数据太多，清空缓冲区
-    if (available >= READ_DATA_LENGTH + 10) {
-        Serial.println("Buffer overflow, clearing...");
-        while(Serial1.available()) {
-            Serial1.read();
-        }
-        return -1;
-    }
+    // if (available >= READ_DATA_LENGTH + 10) {
+    //     Serial.println("Buffer overflow, clearing...");
+    //     while(Serial1.available()) {
+    //         Serial1.read();
+    //     }
+    //     return -1;
+    // }
     
     int16_t mainPeakCentroid;
 

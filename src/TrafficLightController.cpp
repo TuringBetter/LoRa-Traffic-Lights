@@ -127,7 +127,7 @@ void TrafficLightController::laserTask(void* parameter) {
         if (distance >= 0) {
             controller->processLaserData(distance);
         }
-        // vTaskDelay(pdMS_TO_TICKS(5));  // 5ms延时，确保能捕获所有数据
+        vTaskDelay(pdMS_TO_TICKS(5));  // 5ms延时，确保能捕获所有数据
     }
 }
 
