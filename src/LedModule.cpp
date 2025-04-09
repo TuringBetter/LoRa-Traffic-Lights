@@ -1,9 +1,9 @@
 #include "LedModule.h"
 
 Led::Led() : 
-    currentColor(LedColor::RED),
+    currentColor(LedColor::YELLOW),
     brightness(500),
-    frequency(30),
+    frequency(0),
     isBlinking(false),
     lastToggleTime(0),
     currentState(false) {
