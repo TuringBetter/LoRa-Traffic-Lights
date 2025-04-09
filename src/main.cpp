@@ -24,7 +24,6 @@ void laserTask(void *pvParameters) {
     while (1) {
         int16_t distance = laser.receiveReadResponse();
         if (distance != -1) {
-        //   Serial.print("测量的距离: ");
             Serial.println(distance); 
         }
         
@@ -53,8 +52,7 @@ void setup() {
 }
 
 void loop() {
-  // 主循环为空，因为所有工作都在FreeRTOS任务中完成
-  // vTaskDelay(pdMS_TO_TICKS(1000));
+
 }
 
 // put function definitions here:
