@@ -49,7 +49,7 @@ void TrafficLightController::begin() {
         &_accelerometerTaskHandle,
         1
     );
-    
+    /*
     xTaskCreatePinnedToCore(
         laserTask,
         "LaserTask",
@@ -59,6 +59,7 @@ void TrafficLightController::begin() {
         &_laserTaskHandle,
         1
     );
+    */
     /*
     xTaskCreatePinnedToCore(
         loraTask,
@@ -70,6 +71,7 @@ void TrafficLightController::begin() {
         1
     );
     */
+    /*
     xTaskCreatePinnedToCore(
         ledTask,
         "LedTask",
@@ -79,6 +81,7 @@ void TrafficLightController::begin() {
         &_ledTaskHandle,
         1
     );
+    */
 }
 
 // 更新函数
@@ -217,9 +220,12 @@ void TrafficLightController::processLaserData(int16_t distance) {
 
 // 处理加速度计数据
 void TrafficLightController::processAccelerometerData(int16_t x, int16_t y, int16_t z) {
+    static float scale{0.061f / 1000};
     // 计算加速度的绝对值
-    int32_t acceleration = abs(x) + abs(y) + abs(z);
-    
+    double acceleration = abs(x * scale)*abs(x * scale) + abs(y * scale)*abs(y * scale) + abs(z * scale)*abs(z * scale);
+
+    // Serial.println(acceleration);
+
     // 检查是否检测到碰撞
     if (acceleration > COLLISION_THRESHOLD) {
         if (!_collisionDetected) {
@@ -227,7 +233,7 @@ void TrafficLightController::processAccelerometerData(int16_t x, int16_t y, int1
             _lastCollisionDetectionTime = millis();
             
             // 打印碰撞信息
-            Serial.printf("Collision detected! Acceleration: %d\n", acceleration);
+            Serial.printf("Collision detected! Acceleration: %.3lf\n", acceleration);
         }
     } else {
         // 检查碰撞状态是否已经恢复
