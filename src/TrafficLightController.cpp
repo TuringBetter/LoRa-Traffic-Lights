@@ -54,7 +54,7 @@ void TrafficLightController::begin() {
     xTaskCreatePinnedToCore(
         laserTask,
         "LaserTask",
-        4096,
+        4096*2,
         this,
         1,
         &_laserTaskHandle,
