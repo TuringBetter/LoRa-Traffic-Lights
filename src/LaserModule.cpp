@@ -62,6 +62,9 @@ int16_t Laser::receiveReadResponse(){
         return -1;
     }
     
+    Serial.print("available = ");
+    Serial.println(available);
+
     int16_t mainPeakCentroid;
 
     uint8_t buffer[25];
