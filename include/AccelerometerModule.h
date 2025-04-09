@@ -9,7 +9,7 @@ public:
         RANGE_8G = 0x02,
         RANGE_16G = 0x03
     };
-    static const int        COLLISION_THRESHOLD         = 3;     // 碰撞检测阈值
+    static const int        COLLISION_THRESHOLD         = 10;     // 碰撞检测阈值
     static const uint32_t   COLLISION_TIMEOUT           = 2000;   // 碰撞超时时间（毫秒）
 
 public:
