@@ -6,8 +6,6 @@
 #include "LaserModule.h"
 // put function declarations here:
 
-// LoRaModule lora;
-// Led led;
 Laser laser;
 
 // 任务句柄
