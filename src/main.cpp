@@ -56,7 +56,7 @@ void setup() {
         &laserTaskHandle,    // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/*
+
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -67,7 +67,7 @@ void setup() {
         &AccTaskHandle,      // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-*/
+
 /*
   // 创建灯光测试任务
     xTaskCreatePinnedToCore(
