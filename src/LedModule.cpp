@@ -65,6 +65,13 @@ void Led::setFrequency(uint16_t freq) {
     }
 }
 
+void Led::setState(const LedState &ledState)
+{
+    setColor(ledState.color);
+    setBrightness(ledState.brightness);
+    setFrequency(ledState.frequency);
+}
+
 void Led::update() {
     if (!isBlinking) {
         return;
