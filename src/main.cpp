@@ -16,35 +16,70 @@ Accelerometer accelerometer;
 Led led;
 
 // 任务句柄
-TaskHandle_t laserTaskHandle = NULL;
-TaskHandle_t AccTaskHandle = NULL;
-TaskHandle_t LedTaskHandle = NULL;
+TaskHandle_t laserTaskHandle   = NULL;
+TaskHandle_t AccTaskHandle     = NULL;
+TaskHandle_t LedTaskHandle     = NULL;
 TaskHandle_t LedTestTaskHandle = NULL;
+TaskHandle_t ButtonTaskHandle  = NULL;
 
 // 任务函数
 void laserTask(void *pvParameters);
 void accelerometerTask(void* pvParameters);
 void ledTask(void* pvParameters);
 void ledTestTask(void* pvParameters);
+void buttonTask(void* pvParameters);
 
-// 辅助函数
-void processLaserData(int16_t distance);
-
-// 辅助变量
+// =========================辅助变量======================
+// 激光测距相关变量
 bool                _vehicleDetected;
 uint32_t            _lastVehicleDetectionTime;
 
+// Led相关变量
 LedState            _ledState{LedColor::YELLOW,500,0};
 bool                _ledStateChanged{false};
 SemaphoreHandle_t   _ledStateMutex;
+
+// 按键相关变量
+volatile bool buttonPressed = false;
+volatile unsigned long buttonPressTime = 0;  // 按键按下的时间戳
+const int BUTTON_PIN = 48;
+const unsigned long DEBOUNCE_TIME = 20;      // 消抖时间（毫秒）
+
+//======================== 辅助函数======================
+void processLaserData(int16_t distance);
+
+// 按键中断处理函数
+void IRAM_ATTR buttonISR() {
+    buttonPressTime = millis();
+    buttonPressed = true;
+}
+
+
 
 
 void setup() {
     Serial.begin(115200);
     Serial.println("系统初始化");
 
+    // 初始化led
     _ledStateChanged=false;
     _ledStateMutex = xSemaphoreCreateMutex();
+
+    // 初始化按键GPIO
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
+    attachInterrupt(BUTTON_PIN, buttonISR, FALLING);
+
+    // 创建按键检测任务
+    xTaskCreatePinnedToCore(
+        buttonTask,        // 任务函数
+        "ButtonTask",      // 任务名称
+        4096,             // 堆栈大小
+        NULL,             // 任务参数
+        1,                // 任务优先级
+        &ButtonTaskHandle,// 任务句柄
+        1                 // 运行核心 (1 = 核心1)
+    );
+
 
   // 创建激光测距任务
     xTaskCreatePinnedToCore(
@@ -284,5 +319,20 @@ void processLaserData(int16_t distance)
                 xSemaphoreGive(_ledStateMutex);
             }
         }
+    }
+}
+
+// 按键检测任务实现
+void buttonTask(void* pvParameters) {
+    while(true) {
+        if(buttonPressed) {
+            // 检查是否超过消抖时间
+            if(millis() - buttonPressTime >= DEBOUNCE_TIME) {
+                // 上传云端报警
+                Serial.println("pressed!");
+                buttonPressed = false;
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
     }
 }
