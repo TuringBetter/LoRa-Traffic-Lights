@@ -1,299 +1,118 @@
 #include "LoRaModule.h"
 
 /*初始化LoRa模块*/
-void LoRaModule::begin() 
+void LoRa::begin() 
 {
-    Serial1.begin(9600, SERIAL_8N1, 18, 17); // 初始化UART，使用GPIO18作为RX1，GPIO17作为TX1
-    Serial1.println("+++");
-    this->_currentTransferMode=TransferMode::NONE;
+    Serial1.begin(9600, SERIAL_8N1, 18, 17);
+    sendData(LoRa::SendMode::UNCONFIRMED,1,"111");
 }
 
-/*设置发送参数*/
-bool LoRaModule::setTxConfig(const LoRaTransConfigStruct* pConfig) 
-{
-    if(pConfig==nullptr)
-    {
-        Serial.println("[Debug Serial]:LoRaRxConfigStruct Error");
-        return false;
+void LoRa::sendData(SendMode mode, uint8_t trials, const String& payload) {
+    // 验证重试次数
+    if (trials < 1 || trials > 7) {
+        trials = 1;  // 默认值
     }
-    String command = "AT+CTX="  + String(pConfig->freq)
-                        +  ","  + String(pConfig->dataRate) 
-                        +  ","  + String(pConfig->bandwidth) 
-                        +  ","  + String(pConfig->codeRate) 
-                        +  ","  + String(pConfig->power) 
-                        +  ","  + String(pConfig->iqConverted);
-    Serial1.println(command); // 发送配置发射参数的AT指令
 
-    // 等待响应
-    unsigned long startTime = millis();
-    while (millis() - startTime < 2000) 
-    { // 等待最多2秒
-        if (Serial1.available()) 
-        {
-            String response = Serial1.readStringUntil('\n'); // 读取一行响应
-            Serial.println("[LoRa  Serial]:" + response);
-            // 检查响应内容
-            if (response.indexOf(">") != -1) 
-            {
-                // 保存接收配置的数据
-                _currentFreq         = pConfig->freq;
-                _currentDataRate     = pConfig->dataRate;
-                _currentBandwidth    = pConfig->bandwidth;
-                _currentCodeRate     = pConfig->codeRate;
-                _power               = pConfig->power;
-                _currentIqConverted  = pConfig->iqConverted;
+    // 构建AT指令
+    String command = "AT+DTRX=";
+    command += String(mode);
+    command += ",";
+    command += String(trials);
+    command += ",";
+    command += String(payload.length());  // 十六进制字符串长度除以2得到字节数
+    command += ",";
+    command += payload;
 
-                _currentTransferMode = TransferMode::TX_MODE;
-                // Serial.println("[Debug Serial]:set local address: " + String(localAddr));
-                return true; // 设置成功
-            } 
-            else if (response.indexOf("ERROR") != -1) 
-            {
-                // 如果收到错误响应，则重新发送AT指令
-                Serial.println("[Debug Serial]:Error received, retrying...");
-                Serial1.println(command); // 重新发送AT指令
-                // 重传次数限制
-                static int retryCount = 0;
-                if (retryCount < 5) 
-                    retryCount++;
-                else 
-                {
-                    Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
-                    return false; // 重传次数达到上限，设置失败
-                }
+    Serial.println(command);
+    // 发送命令
+    Serial1.println(command);
+}
+
+void LoRa::receiveData()
+{
+    static int parseState = 0;  // 0: 等待rx行, 1: 等待payload行
+    static uint8_t currentPort = 0;
+
+    if (Serial1.available()) 
+    {
+        String response = Serial1.readStringUntil('\n'); // 读取一行响应
+        response.trim();  // 移除首尾空格
+        // Serial.println("[LoRa Serial]:" + response);
+
+        // 检查是否是rx行
+        if (response.startsWith("rx:")) {
+            parseState = 1;
+            // 解析port值
+            int portIndex = response.indexOf("port =");
+            if (portIndex >= 0) {
+                currentPort = response.substring(portIndex + 6).toInt();
             }
         }
+        // 检查是否是payload行（以0x开头）
+        else if (parseState == 1 && response.indexOf("0x") >= 0) {
+            parseState = 0;
+            // 解析payload
+            handlePayload(currentPort, response);
+        }
     }
-
-    Serial.println("[Debug Serial]:UART Time Out Error");
-    return false; // 设置失败
 }
 
-/*设置接收参数*/
-bool LoRaModule::setRxConfig(const LoRaTransConfigStruct *pConfig)
-{
-    if(pConfig==nullptr)
-    {
-        Serial.println("[Debug Serial]:LoRaRxConfigStruct Error");
-        return false;
-    }
-    String command = "AT+CRXS=" + String(pConfig->freq) 
-                        +  ","  + String(pConfig->dataRate) 
-                        +  ","  + String(pConfig->bandwidth) 
-                        +  ","  + String(pConfig->codeRate)
-                        +  ","  + String(pConfig->iqConverted);
-    Serial1.println(command); // 发送配置接收参数的AT指令
+void LoRa::handlePayload(uint8_t port, const String& payload) {
+    Serial.print("处理端口: ");
+    Serial.print(port);
+    Serial.print(" 数据: ");
+    Serial.println(payload);
 
-    // 等待响应
-    unsigned long startTime = millis();
-    while (millis() - startTime < 2000) 
-    { // 等待最多2秒
-        if (Serial1.available()) 
-        {
-            String response = Serial1.readStringUntil('\n'); // 读取一行响应
-            Serial.println("[LoRa  Serial]:" + response);
-            // 检查响应内容
-            if (response.indexOf("start") != -1) 
-            {
-                // Serial.println("[Debug Serial]:set local address: " + String(localAddr));
-
-                // 保存接收配置的数据
-                _currentFreq         = pConfig->freq;
-                _currentDataRate     = pConfig->dataRate;
-                _currentBandwidth    = pConfig->bandwidth;
-                _currentCodeRate     = pConfig->codeRate;
-                _currentIqConverted  = pConfig->iqConverted;
-
-                _currentTransferMode = TransferMode::RX_MODE;
-
-                return true; // 设置成功
-            } 
-            else if (response.indexOf("ERROR") != -1) 
-            {
-                // 如果收到错误响应，则重新发送AT指令
-                Serial.println("[Debug Serial]:Error received, retrying...");
-                Serial1.println(command); // 重新发送AT指令
-                // 重传次数限制
-                static int retryCount = 0;
-                if (retryCount < 5) 
-                    retryCount++;
-                else 
-                {
-                    Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
-                    return false; // 重传次数达到上限，设置失败
+    switch(port) {
+        case 10: {
+            // 设置闪烁频率
+            if (payload.indexOf("0x1") >= 0) {
+                uint8_t freq = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
+                switch(freq) {
+                    case 0x1E: Serial.println("设置闪烁频率: 30Hz"); break;
+                    case 0x3C: Serial.println("设置闪烁频率: 60Hz"); break;
+                    case 0x78: Serial.println("设置闪烁频率: 120Hz"); break;
                 }
             }
+            break;
         }
-    }
-
-    Serial.println("[Debug Serial]:UART Time Out Error");
-    return false; // 设置失败
-}
-
-/*设置本地地址*/
-bool LoRaModule::setLocalAddress(uint32_t localAddr) 
-{
-    String command = "AT+CADDRSET=" + String(localAddr);
-    Serial1.println(command); // 发送配置本地地址的AT指令
-
-    // 等待响应
-    unsigned long startTime = millis();
-    while (millis() -startTime < 2000) 
-    { // 等待最多2秒
-        if (Serial1.available()) 
-        {
-            String response = Serial1.readStringUntil('\n'); // 读取一行响应
-            Serial.println("[LoRa  Serial]:" + response);
-            // 检查响应内容
-            if (response.startsWith("set local address:")) 
-            {
-                Serial.println("[Debug Serial]:set local address: " + String(localAddr));
-                _localAddr=localAddr;
-                return true; // 设置成功
-            } 
-            else if (response.startsWith("+CMD ERROR")) 
-            {
-                // 如果收到错误响应，则重新发送AT指令
-                Serial.println("[Debug Serial]:Error received, retrying...");
-                Serial1.println(command); // 重新发送AT指令
-                // 重传次数限制
-                static int retryCount = 0;
-                if (retryCount < 5) 
-                    retryCount++;
-                else 
-                {
-                    Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
-                    return false; // 重传次数达到上限，设置失败
+        case 11: {
+            // 设置LED颜色
+            if (payload.indexOf("0x2") >= 0) {
+                uint8_t color = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
+                Serial.println(color == 0 ? "设置颜色: 红色" : "设置颜色: 黄色");
+            }
+            break;
+        }
+        case 12: {
+            // 设置是否闪烁
+            if (payload.indexOf("0x3") >= 0) {
+                uint8_t mode = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
+                Serial.println(mode == 0 ? "设置模式: 闪烁" : "设置模式: 常亮");
+            }
+            break;
+        }
+        case 13: {
+            // 设置亮度
+            if (payload.indexOf("0x4") >= 0) {
+                String payloadStr = payload;
+                int firstHex = payloadStr.indexOf("0x", payloadStr.indexOf("0x4") + 2);
+                int secondHex = payloadStr.indexOf("0x", firstHex + 2);
+                if (firstHex >= 0 && secondHex >= 0) {
+                    uint8_t high = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
+                    uint8_t low = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
+                    uint16_t brightness = (high << 8) | low;
+                    Serial.print("设置亮度: ");
+                    Serial.println(brightness);
                 }
             }
+            break;
         }
+        case 20:
+            Serial.println("设置为车辆通过状态: 红色 + 亮度7000 + 120Hz");
+            break;
+        case 21:
+            Serial.println("设置为车辆离开状态: 黄色 + 亮度1000 + 常亮");
+            break;
     }
-    return false; // 设置失败
-}
-
-/*设置目标地址*/
-bool LoRaModule::setTargetAddress(uint32_t targetAddr) 
-{
-    String command = "AT+CTXADDRSET=" + String(targetAddr);
-    Serial1.println(command); // 发送配置本地地址的AT指令
-    // 等待响应
-    unsigned long startTime = millis();
-    while (millis() -startTime < 2000) 
-    { // 等待最多2秒
-        if (Serial1.available()) 
-        {
-            String response = Serial1.readStringUntil('\n'); // 读取一行响应
-            Serial.println("[LoRa  Serial]:" + response);
-            // 检查响应内容
-            if (response.startsWith("set target address:")) 
-            {
-                Serial.println("[Debug Serial]:set target address: " + String(targetAddr));
-                _targetAddr=targetAddr;
-                return true; // 设置成功
-            } 
-            else if (response.startsWith("+CMD ERROR")) 
-            {
-                // 如果收到错误响应，则重新发送AT指令
-                Serial.println("[Debug Serial]:Error received, retrying...");
-                Serial1.println(command); // 重新发送AT指令
-                // 重传次数限制
-                static int retryCount = 0;
-                if (retryCount < 5) 
-                    retryCount++;
-                else 
-                {
-                    Serial.println("[Debug Serial]:Maximum retry count reached, giving up.");
-                    return false; // 重传次数达到上限，设置失败
-                }
-            }
-        }
-    }
-    return false; // 设置失败
-}
-
-/*休眠模式*/
-void LoRaModule::setSleepMode(int sleepMode) 
-{
-    String command = "AT+CSLEEP=" + String(sleepMode);
-    Serial1.println(command); // 发送设置睡眠模式的AT指令
-}
-
-void LoRaModule::quitTransparent(void)
-{
-    Serial1.println("+++");
-    this->_currentTransferMode=TransferMode::NONE;
-}
-
-bool LoRaModule::sendData(const String &str)
-{
-    if(this->_currentTransferMode!=TransferMode::TX_MODE)
-    {
-        Serial.println("[Debug Serial]: Current transfer mode is not TX_MODE.");
-        return false;
-    }
-    if (str.isEmpty()) {
-        Serial.println("[Debug Serial]: Data to send is empty.");
-        return false; // 数据为空，发送失败
-    }
-    Serial1.println(str);
-    // 等待响应
-    unsigned long startTime = millis();
-    while (millis() -startTime < 2000) 
-    { // 等待最多2秒
-        if (Serial1.available()) 
-        {
-            String response = Serial1.readStringUntil('\n'); // 读取一行响应
-            Serial.println("[LoRa  Serial]:" + response);
-            // 检查响应内容
-            if (response.startsWith("OnTxDone")) 
-            {
-                Serial.println("[Debug Serial]:send data successful");
-                return true; // 设置成功
-            } 
-        }
-    }
-    return false; // 设置失败
-}
-
-uint64_t LoRaModule::receiveData(RecvInfo& recvinfo)
-{
-    if(this->_currentTransferMode!=TransferMode::RX_MODE)
-    {
-        Serial.println("[Debug Serial]: Current transfer mode is not RX_MODE.");
-        return 0; // 函数退出，返回空字符串
-    }
-    // 等待响应
-    unsigned long startTime = millis();
-    while (millis() -startTime < 10000) 
-    { // 等待最多2秒
-        if (Serial1.available()) 
-        {
-            String response = Serial1.readStringUntil('\n'); // 读取一行响应
-            Serial.println("[LoRa  Serial]:" + response);
-            /**
-             * 一次接受数据的案例：
-             * OnRxDone
-             * Recv:
-             * 1122334455 AABBCC 6677889900
-             * from: 15
-             * rssi = -70, snr = 2
-             */
-            if (response.startsWith("OnRxDone")) 
-            {
-                Serial.println("[Debug Serial]: Receive data successful");
-                // 保存接收到的消息
-                // Serial1.readStringUntil(':'); // 跳过"Recv:"
-                Serial1.readStringUntil('\n');
-                recvinfo.message = Serial1.readStringUntil('\n'); // 读取实际接受的消息数据
-                Serial1.readStringUntil(':'); // 跳过"from:"
-                recvinfo.fromAddr = Serial1.parseInt(); // 读取消息数据的来源地址
-                Serial1.readStringUntil('='); // 跳过"rssi ="
-                recvinfo.rssi = Serial1.parseInt(); // 读取rssi值
-                Serial1.readStringUntil('='); // 跳过"snr ="
-                recvinfo.snr = Serial1.parseInt(); // 读取snr值
-                return recvinfo.message.length(); // 返回读取到的message长度
-            } 
-        }
-    }
-    return 0; // 设置失败
 }

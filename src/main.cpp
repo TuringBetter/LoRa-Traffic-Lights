@@ -4,6 +4,7 @@
 #include "LedModule.h"
 #include "LaserModule.h"
 #include "AccelerometerModule.h"
+#include "LoRaModule.h"
 // put function declarations here:
 
 // 配置参数
@@ -11,9 +12,10 @@ static const int        VEHICLE_DETECTION_THRESHOLD = 500;    // 车辆检测阈
 static const uint32_t   VEHICLE_TIMEOUT             = 500;  // 车辆超时时间（毫秒）
 
 // 传感器模块
-Laser laser;
-Accelerometer accelerometer;
-Led led;
+Laser           laser;
+Accelerometer   accelerometer;
+Led             led;
+LoRa            lora;
 
 // 任务句柄
 TaskHandle_t laserTaskHandle   = NULL;
@@ -21,6 +23,7 @@ TaskHandle_t AccTaskHandle     = NULL;
 TaskHandle_t LedTaskHandle     = NULL;
 TaskHandle_t LedTestTaskHandle = NULL;
 TaskHandle_t ButtonTaskHandle  = NULL;
+TaskHandle_t loraTestTaskHandle  = NULL;
 
 // 任务函数
 void laserTask(void *pvParameters);
@@ -28,6 +31,7 @@ void accelerometerTask(void* pvParameters);
 void ledTask(void* pvParameters);
 void ledTestTask(void* pvParameters);
 void buttonTask(void* pvParameters);
+void loraTestTask(void* pvParameters);
 
 // =========================辅助变量======================
 // 激光测距相关变量
@@ -40,10 +44,10 @@ bool                _ledStateChanged{false};
 SemaphoreHandle_t   _ledStateMutex;
 
 // 按键相关变量
-volatile bool buttonPressed = false;
-volatile unsigned long buttonPressTime = 0;  // 按键按下的时间戳
-const int BUTTON_PIN = 48;
-const unsigned long DEBOUNCE_TIME = 20;      // 消抖时间（毫秒）
+volatile bool           buttonPressed   = false;
+volatile unsigned long  buttonPressTime = 0;  // 按键按下的时间戳
+const int               BUTTON_PIN      = 48;
+const unsigned long     DEBOUNCE_TIME   = 20;      // 消抖时间（毫秒）
 
 //======================== 辅助函数======================
 void processLaserData(int16_t distance);
@@ -54,9 +58,6 @@ void IRAM_ATTR buttonISR() {
     buttonPressed = true;
 }
 
-
-
-
 void setup() {
     Serial.begin(115200);
     Serial.println("系统初始化");
@@ -64,11 +65,11 @@ void setup() {
     // 初始化led
     _ledStateChanged=false;
     _ledStateMutex = xSemaphoreCreateMutex();
-
+/** *
     // 初始化按键GPIO
     pinMode(BUTTON_PIN, INPUT_PULLUP);
     attachInterrupt(BUTTON_PIN, buttonISR, FALLING);
-
+/** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
         buttonTask,        // 任务函数
@@ -80,7 +81,7 @@ void setup() {
         1                 // 运行核心 (1 = 核心1)
     );
 
-
+/** *
   // 创建激光测距任务
     xTaskCreatePinnedToCore(
         laserTask,           // 任务函数
@@ -91,7 +92,7 @@ void setup() {
         &laserTaskHandle,    // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-
+/** *
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -102,8 +103,7 @@ void setup() {
         &AccTaskHandle,      // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-
-/*
+/** *
   // 创建灯光测试任务
     xTaskCreatePinnedToCore(
         ledTestTask,         // 任务函数
@@ -114,7 +114,7 @@ void setup() {
         &LedTestTaskHandle,  // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-*/
+/** *
   // 创建灯光任务
     xTaskCreatePinnedToCore(
         ledTask,         // 任务函数
@@ -125,7 +125,18 @@ void setup() {
         &LedTaskHandle,  // 任务句柄
         1                // 运行核心 (1 = 核心1)
     );
-
+/** */
+  // 创建LoRa测试任务
+    xTaskCreatePinnedToCore(
+        loraTestTask,           // 任务函数
+        "LoraTestTask",         // 任务名称
+        4096,                   // 堆栈大小
+        NULL,                   // 任务参数
+        1,                      // 任务优先级
+        &loraTestTaskHandle,    // 任务句柄
+        1                       // 运行核心 (1 = 核心1)
+    );
+/** */
   // 删除setup任务，因为不再需要
     vTaskDelete(NULL);
 }
@@ -334,5 +345,15 @@ void buttonTask(void* pvParameters) {
             }
         }
         vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
+    }
+}
+
+void loraTestTask(void *pvParameters)
+{
+    lora.begin();
+    while(true)
+    {
+        lora.receiveData();
+        vTaskDelay(pdMS_TO_TICKS(100));  // 100ms延时
     }
 }
