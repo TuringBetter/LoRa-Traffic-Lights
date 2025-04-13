@@ -58,11 +58,12 @@ void LoRa::receiveData()
 }
 
 void LoRa::handlePayload(uint8_t port, const String& payload) {
+/** *
     Serial.print("处理端口: ");
     Serial.print(port);
     Serial.print(" 数据: ");
     Serial.println(payload);
-
+/** */
     switch(port) {
         case 10: {
             // 设置闪烁频率

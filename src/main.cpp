@@ -114,7 +114,7 @@ void setup() {
         &LedTestTaskHandle,  // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
   // 创建灯光任务
     xTaskCreatePinnedToCore(
         ledTask,         // 任务函数
