@@ -1,6 +1,12 @@
 #pragma once
 #include <Arduino.h>
 #include <string>
+#include "LedModule.h"
+
+// 声明外部变量
+extern LedState _ledState;
+extern bool _ledStateChanged;
+extern SemaphoreHandle_t _ledStateMutex;
 
 class LoRa {
 public:

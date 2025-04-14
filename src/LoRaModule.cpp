@@ -58,62 +58,83 @@ void LoRa::receiveData()
 }
 
 void LoRa::handlePayload(uint8_t port, const String& payload) {
-/** *
-    Serial.print("处理端口: ");
-    Serial.print(port);
-    Serial.print(" 数据: ");
-    Serial.println(payload);
-/** */
-    switch(port) {
-        case 10: {
-            // 设置闪烁频率
-            if (payload.indexOf("0x1") >= 0) {
-                uint8_t freq = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
-                switch(freq) {
-                    case 0x1E: Serial.println("设置闪烁频率: 30Hz"); break;
-                    case 0x3C: Serial.println("设置闪烁频率: 60Hz"); break;
-                    case 0x78: Serial.println("设置闪烁频率: 120Hz"); break;
+    if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) {
+        switch(port) {
+            case 10: {
+                // 设置闪烁频率
+                if (payload.indexOf("0x1") >= 0) {
+                    uint8_t freq = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
+                    switch(freq) {
+                        case 0x1E: 
+                            // Serial.println("设置闪烁频率: 30Hz");
+                            _ledState.frequency = 30;
+                            break;
+                        case 0x3C: 
+                            // Serial.println("设置闪烁频率: 60Hz");
+                            _ledState.frequency = 60;
+                            break;
+                        case 0x78: 
+                            // Serial.println("设置闪烁频率: 120Hz");
+                            _ledState.frequency = 120;
+                            break;
+                    }
+                    _ledStateChanged = true;
                 }
+                break;
             }
-            break;
-        }
-        case 11: {
-            // 设置LED颜色
-            if (payload.indexOf("0x2") >= 0) {
-                uint8_t color = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
-                Serial.println(color == 0 ? "设置颜色: 红色" : "设置颜色: 黄色");
-            }
-            break;
-        }
-        case 12: {
-            // 设置是否闪烁
-            if (payload.indexOf("0x3") >= 0) {
-                uint8_t mode = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
-                Serial.println(mode == 0 ? "设置模式: 闪烁" : "设置模式: 常亮");
-            }
-            break;
-        }
-        case 13: {
-            // 设置亮度
-            if (payload.indexOf("0x4") >= 0) {
-                String payloadStr = payload;
-                int firstHex = payloadStr.indexOf("0x", payloadStr.indexOf("0x4") + 2);
-                int secondHex = payloadStr.indexOf("0x", firstHex + 2);
-                if (firstHex >= 0 && secondHex >= 0) {
-                    uint8_t high = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
-                    uint8_t low = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
-                    uint16_t brightness = (high << 8) | low;
-                    Serial.print("设置亮度: ");
-                    Serial.println(brightness);
+            case 11: {
+                // 设置LED颜色
+                if (payload.indexOf("0x2") >= 0) {
+                    uint8_t color = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
+                    _ledState.color = color == 0 ? LedColor::RED : LedColor::YELLOW;
+                    // Serial.println(color == 0 ? "设置颜色: 红色" : "设置颜色: 黄色");
+                    _ledStateChanged = true;
                 }
+                break;
             }
-            break;
+            case 12: {
+                // 设置是否闪烁
+                if (payload.indexOf("0x3") >= 0) {
+                    uint8_t mode = strtol(payload.substring(payload.lastIndexOf("0x")).c_str(), NULL, 16);
+                    _ledState.frequency = mode == 0 ? 60 : 0; // 闪烁时默认60Hz
+                    // Serial.println(mode == 0 ? "设置模式: 闪烁" : "设置模式: 常亮");
+                    _ledStateChanged = true;
+                }
+                break;
+            }
+            case 13: {
+                // 设置亮度
+                if (payload.indexOf("0x4") >= 0) {
+                    String payloadStr = payload;
+                    int firstHex = payloadStr.indexOf("0x", payloadStr.indexOf("0x4") + 2);
+                    int secondHex = payloadStr.indexOf("0x", firstHex + 2);
+                    if (firstHex >= 0 && secondHex >= 0) {
+                        uint8_t high = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
+                        uint8_t low = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
+                        uint16_t brightness = (high << 8) | low;
+                        _ledState.brightness = brightness;
+                        // Serial.print("设置亮度: ");
+                        // Serial.println(brightness);
+                        _ledStateChanged = true;
+                    }
+                }
+                break;
+            }
+            case 20:
+                Serial.println("设置为车辆通过状态: 红色 + 亮度7000 + 120Hz");
+                _ledState.color = LedColor::RED;
+                _ledState.brightness = 7000;
+                _ledState.frequency = 120;
+                _ledStateChanged = true;
+                break;
+            case 21:
+                Serial.println("设置为车辆离开状态: 黄色 + 亮度1000 + 常亮");
+                _ledState.color = LedColor::YELLOW;
+                _ledState.brightness = 1000;
+                _ledState.frequency = 0;
+                _ledStateChanged = true;
+                break;
         }
-        case 20:
-            Serial.println("设置为车辆通过状态: 红色 + 亮度7000 + 120Hz");
-            break;
-        case 21:
-            Serial.println("设置为车辆离开状态: 黄色 + 亮度1000 + 常亮");
-            break;
+        xSemaphoreGive(_ledStateMutex);
     }
 }
