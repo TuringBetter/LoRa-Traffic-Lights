@@ -19,13 +19,17 @@ void LoRa::sendData(SendMode mode, uint8_t trials, const String& payload) {
     command += ",";
     command += String(trials);
     command += ",";
-    command += String(payload.length());  // 十六进制字符串长度除以2得到字节数
+    command += String(payload.length());
     command += ",";
     command += payload;
 
     Serial.println(command);
     // 发送命令
     Serial1.println(command);
+
+    // 记录发送时间
+    LoRa_Send_TIME = millis();
+    waitingForResponse = true;
 }
 
 void LoRa::receiveData()
@@ -37,7 +41,6 @@ void LoRa::receiveData()
     {
         String response = Serial1.readStringUntil('\n'); // 读取一行响应
         response.trim();  // 移除首尾空格
-        // Serial.println("[LoRa Serial]:" + response);
 
         // 检查是否是rx行
         if (response.startsWith("rx:")) {
@@ -47,6 +50,16 @@ void LoRa::receiveData()
             if (portIndex >= 0) {
                 currentPort = response.substring(portIndex + 6).toInt();
             }
+
+            // 如果是延迟测量响应
+            if (waitingForResponse) {
+                LoRa_Recv_TIME = millis();
+                LoRa_Connect_Delay = (LoRa_Recv_TIME - LoRa_Send_TIME) / 2;
+                waitingForResponse = false;
+                Serial.print("通信延迟: ");
+                Serial.print(LoRa_Connect_Delay);
+                Serial.println(" ms");
+            }
         }
         // 检查是否是payload行（以0x开头）
         else if (parseState == 1 && response.indexOf("0x") >= 0) {
@@ -55,6 +68,17 @@ void LoRa::receiveData()
             handlePayload(currentPort, response);
         }
     }
+}
+
+// 测量通信延迟
+void LoRa::measureLatency() {
+    // 发送一个简单的测试消息
+    sendData(SendMode::CONFIRMED, 1, "0x00");
+}
+
+// 获取当前延迟值
+uint32_t LoRa::getLatency() {
+    return LoRa_Connect_Delay;
 }
 
 void LoRa::handlePayload(uint8_t port, const String& payload) {
