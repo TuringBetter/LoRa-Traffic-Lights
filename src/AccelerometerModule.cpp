@@ -1,5 +1,8 @@
 #include "AccelerometerModule.h"
 #include <Arduino.h>
+#include "LoRaModule.h"
+
+extern LoRa lora;
 
 Accelerometer::Accelerometer(uint8_t address) : _address(address) {}
 
@@ -54,7 +57,8 @@ void Accelerometer::processDate(int16_t x, int16_t y, int16_t z)
             _lastCollisionDetectionTime = millis();
             
             // 打印碰撞信息
-            Serial.printf("Collision detected! Acceleration: %.3lf\n", acceleration);
+            // Serial.printf("Collision detected! Acceleration: %.3lf\n", acceleration);
+            lora.sendData(LoRa::SendMode::UNCONFIRMED,1,"08");
         }
     } else {
         // 检查碰撞状态是否已经恢复

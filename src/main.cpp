@@ -68,13 +68,14 @@ void setup() {
     _ledStateChanged=false;
     _ledStateMutex = xSemaphoreCreateMutex();
 
+    // 初始化lora
     lora.begin();
 
-/** *
+/** */
     // 初始化按键GPIO
     pinMode(BUTTON_PIN, INPUT_PULLUP);
     attachInterrupt(BUTTON_PIN, buttonISR, FALLING);
-/** *
+/** */
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
         buttonTask,        // 任务函数
@@ -97,7 +98,7 @@ void setup() {
         &laserTaskHandle,    // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -141,7 +142,7 @@ void setup() {
         &loraTestTaskHandle,    // 任务句柄
         1                       // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数
@@ -360,7 +361,8 @@ void buttonTask(void* pvParameters) {
             // 检查是否超过消抖时间
             if(millis() - buttonPressTime >= DEBOUNCE_TIME) {
                 // 上传云端报警
-                Serial.println("pressed!");
+                Serial.println("pressed");
+                lora.sendData(LoRa::SendMode::UNCONFIRMED,1,"07");
                 buttonPressed = false;
             }
         }
