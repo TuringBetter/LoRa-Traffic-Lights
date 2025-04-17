@@ -23,10 +23,22 @@ public:
 
 private:
     void handlePayload(uint8_t port, const String& payload);
+    void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms);  // 延迟执行命令
     
     // 延迟测量相关变量
     uint32_t LoRa_Connect_Delay = 0;    // 通信延迟时间
     uint32_t LoRa_Send_TIME = 0;        // 发送时间
     uint32_t LoRa_Recv_TIME = 0;        // 接收时间
     bool waitingForResponse = false;     // 是否在等待响应
+    SemaphoreHandle_t latencySemaphore;  // 延迟测量完成信号量
+
+    // 同步控制相关变量
+    static const uint32_t SYNC_DELAY_MS = 1000;  // 同步延迟时间（1秒）
+    struct ScheduledCommand {
+        uint8_t port;
+        String payload;
+        uint32_t executeTime;
+    };
+    ScheduledCommand scheduledCommand;  // 存储待执行的命令
+    bool hasScheduledCommand = false;   // 是否有待执行的命令
 };

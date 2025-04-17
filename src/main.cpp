@@ -24,6 +24,7 @@ TaskHandle_t LedTaskHandle     = NULL;
 TaskHandle_t LedTestTaskHandle = NULL;
 TaskHandle_t ButtonTaskHandle  = NULL;
 TaskHandle_t loraTestTaskHandle  = NULL;
+TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
 
 // 任务函数
 void laserTask(void *pvParameters);
@@ -32,6 +33,7 @@ void ledTask(void* pvParameters);
 void ledTestTask(void* pvParameters);
 void buttonTask(void* pvParameters);
 void loraTestTask(void* pvParameters);
+void latencyTask(void* pvParameters);  // 延迟测量任务函数
 
 // =========================辅助变量======================
 // 激光测距相关变量
@@ -65,6 +67,9 @@ void setup() {
     // 初始化led
     _ledStateChanged=false;
     _ledStateMutex = xSemaphoreCreateMutex();
+
+    lora.begin();
+
 /** *
     // 初始化按键GPIO
     pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -114,7 +119,7 @@ void setup() {
         &LedTestTaskHandle,  // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
   // 创建灯光任务
     xTaskCreatePinnedToCore(
         ledTask,         // 任务函数
@@ -137,12 +142,27 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 /** */
+  // 创建延迟测量任务
+    xTaskCreatePinnedToCore(
+        latencyTask,           // 任务函数
+        "LatencyTask",         // 任务名称
+        4096,                  // 堆栈大小
+        NULL,                  // 任务参数
+        1,                     // 任务优先级
+        &latencyTaskHandle,    // 任务句柄
+        1                      // 运行核心 (1 = 核心1)
+    );
+/** */
   // 删除setup任务，因为不再需要
     vTaskDelete(NULL);
+/** */
 }
 
 void loop() {
-
+/** *
+    lora.sendData(LoRa::SendMode::UNCONFIRMED,1,"06");
+    delay(1000);
+/** */
 }
 
 // put function definitions here:
@@ -350,10 +370,32 @@ void buttonTask(void* pvParameters) {
 
 void loraTestTask(void *pvParameters)
 {
-    lora.begin();
+    // lora.begin();
     while(true)
     {
         lora.receiveData();
         vTaskDelay(pdMS_TO_TICKS(100));  // 100ms延时
+    }
+}
+
+// 延迟测量任务实现
+void latencyTask(void* pvParameters) {
+    const TickType_t xDelay = pdMS_TO_TICKS(10*60*1000);  // 每10min测量一次延迟
+    
+    while(true) {
+        // 测量通信延迟
+        lora.measureLatency();
+        /** *
+        // 获取并打印延迟值
+        uint32_t latency = lora.getLatency();
+        if(latency!=0)
+        {
+            Serial.print("当前通信延迟: ");
+            Serial.print(latency);
+            Serial.println(" ms");
+        }
+        /** */
+        // 任务延时
+        vTaskDelay(xDelay);
     }
 }
