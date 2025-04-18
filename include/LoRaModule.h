@@ -11,10 +11,13 @@ extern bool _ledStateChanged;
 
 extern SemaphoreHandle_t _ledStateMutex;
 extern TaskHandle_t loraTestTaskHandle;
+extern TaskHandle_t latencyTaskHandle;  // 延迟测量任务句柄
+void loraTestTask(void* pvParameters);
+void latencyTask(void* pvParameters);  // 延迟测量任务函数
 
 void LoRa_init();
 void sendData(const String& payload);
-void loraTestTask(void* pvParameters);
+uint32_t getLatency();  // 获取当前延迟值
 
 class LoRa {
 public:

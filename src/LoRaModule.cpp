@@ -192,15 +192,26 @@ static const uint64_t   LoRa_TX = 17;
 
 SemaphoreHandle_t latencySemaphore;  // 延迟测量完成信号量
 TaskHandle_t loraTestTaskHandle  = NULL;
+TaskHandle_t latencyTaskHandle   = NULL;  // 延迟测量任务句柄
+
+static uint32_t LoRa_Connect_Delay = 0;    // 通信延迟时间
+static uint32_t LoRa_Send_TIME = 0;        // 发送时间
+static uint32_t LoRa_Recv_TIME = 0;        // 接收时间
+static bool     waitingForResponse=false;
+
+static void receiveData();
+static void measureLatency();
 
 void sendData(const String &payload);
-static void receiveData();
+uint32_t getLatency();
 
 void LoRa_init()
 {
     Serial1.begin(9600, SERIAL_8N1, LoRa_RX, LoRa_TX);
+    // sendData("1111");
+    // delay(1000);
     sendData("1111");
-    sendData("1111");
+    delay(1000);
     // 创建延迟测量信号量
     latencySemaphore = xSemaphoreCreateBinary();
 }
@@ -217,9 +228,20 @@ void sendData(const String &payload)
     command += ",";
     command += payload;
 
-    // Serial.println(command);
+    Serial.println(command);
     // 发送命令
     Serial1.println(command);
+}
+
+uint32_t getLatency()
+{
+    // 等待延迟测量完成
+    if (xSemaphoreTake(latencySemaphore, pdMS_TO_TICKS(5000)) == pdTRUE) {
+        return LoRa_Connect_Delay;
+    } else {
+        // Serial.println("获取延迟值超时");
+        return 0;
+    }
 }
 
 static void receiveData()
@@ -237,7 +259,7 @@ static void receiveData()
     {
         String response = Serial1.readStringUntil('\n'); // 读取一行响应
         response.trim();  // 移除首尾空格
-        Serial.println("[LoRa]: "+response);
+        // Serial.println("[LoRa]: "+response);
 
         // 检查是否是rx行
         if (response.startsWith("rx:")) {
@@ -250,7 +272,7 @@ static void receiveData()
             if (portIndex >= 0) {
                 currentPort = response.substring(portIndex + 6).toInt();
             }
-            /**
+            /**/
             // 如果是延迟测量响应
             if (waitingForResponse) {
                 LoRa_Recv_TIME = millis();
@@ -276,12 +298,41 @@ static void receiveData()
     }    
 }
 
+void measureLatency()
+{
+    sendData("06");
+    LoRa_Send_TIME = millis();
+    waitingForResponse = true;
+}
+
 void loraTestTask(void *pvParameters)
 {
-    // sendData("1111");
     while(true)
     {
         receiveData();
         vTaskDelay(pdMS_TO_TICKS(100));  // 100ms延时
     }
+}
+
+void latencyTask(void *pvParameters)
+{
+    // const TickType_t xDelay = pdMS_TO_TICKS(10*60*1000);  // 每10min测量一次延迟
+    const TickType_t xDelay = pdMS_TO_TICKS(1*2*1000);  // 每10min测量一次延迟
+    
+    while(true) {
+        // 测量通信延迟
+        measureLatency();
+        /** */
+        // 获取并打印延迟值
+        uint32_t latency = getLatency();
+        if(latency!=0)
+        {
+            Serial.print("当前通信延迟: ");
+            Serial.print(latency);
+            Serial.println(" ms");
+        }
+        /** */
+        // 任务延时
+        vTaskDelay(xDelay);
+    }    
 }

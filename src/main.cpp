@@ -26,7 +26,7 @@ TaskHandle_t LedTaskHandle     = NULL;
 TaskHandle_t LedTestTaskHandle = NULL;
 // TaskHandle_t ButtonTaskHandle  = NULL;
 // TaskHandle_t loraTestTaskHandle  = NULL;
-TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
+// TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
 
 // 任务函数
 // void laserTask(void *pvParameters);
@@ -152,7 +152,7 @@ void setup() {
         &loraTestTaskHandle,    // 任务句柄
         1                       // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数

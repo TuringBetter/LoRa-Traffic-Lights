@@ -142,7 +142,7 @@ void readRaw(int16_t &x, int16_t &y, int16_t &z)
         return;
     }
 
-    Wire1.requestFrom(ADDR, 6);
+    Wire1.requestFrom(ADDR, static_cast<uint8_t>(6));
     if (Wire1.available() == 6) {
         x = Wire1.read() | (Wire1.read() << 8);
         y = Wire1.read() | (Wire1.read() << 8);
