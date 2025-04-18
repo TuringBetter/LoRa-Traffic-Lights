@@ -1,4 +1,4 @@
-#include "LaserModule.h"
+#include "LaserModule_uart.h"
 
 static uint16_t crc16_table[256];
 
@@ -27,25 +27,25 @@ static uint16_t calculateCRC16(uint8_t *data, size_t length){
     return crc;
 }
 
-void Laser::begin()
+void Laser_uart::begin()
 {
     Serial1.begin(921600, SERIAL_8N1, RX_PIN, TX_PIN);
     crc16_init();
 }
 
-void Laser::sendReadCommand()
+void Laser_uart::sendReadCommand()
 {
     static uint8_t data[] = {0xA5, 0x03, 0x20, 0x01, 0x00, 0x00, 0x00, 0x02, 0x6E};
     Serial1.write(data, sizeof(data));
 }
 
-void Laser::sendoverCommand(){
+void Laser_uart::sendoverCommand(){
     static uint8_t data[] = {0xA5, 0x03, 0x20, 0x02, 0x00, 0x00, 0x00, 0x46, 0x6E};
     Serial1.write(data, sizeof(data));
 }
 
 
-int16_t Laser::receiveReadResponse(){
+int16_t Laser_uart::receiveReadResponse(){
     int available = Serial1.available();
     
     if(available<READ_DATA_LENGTH)

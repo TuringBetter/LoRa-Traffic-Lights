@@ -5,7 +5,7 @@
 #define READ_DATA_LENGTH 23
 
 
-class Laser {
+class Laser_uart {
 public:
     void begin();
     void sendReadCommand();

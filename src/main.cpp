@@ -2,7 +2,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "LedModule.h"
-#include "LaserModule.h"
+#include "LaserModule_i2c.h"
 #include "AccelerometerModule.h"
 #include "LoRaModule.h"
 // put function declarations here:
@@ -12,7 +12,8 @@ static const int        VEHICLE_DETECTION_THRESHOLD = 500;    // 车辆检测阈
 static const uint32_t   VEHICLE_TIMEOUT             = 500;  // 车辆超时时间（毫秒）
 
 // 传感器模块
-Laser           laser;
+// Laser_uart      laser;
+// Laser_i2c       laser;
 Accelerometer   accelerometer;
 Led             led;
 LoRa            lora;
@@ -63,19 +64,21 @@ void IRAM_ATTR buttonISR() {
 void setup() {
     Serial.begin(115200);
     Serial.println("系统初始化");
-
+/** */
     // 初始化led
     _ledStateChanged=false;
     _ledStateMutex = xSemaphoreCreateMutex();
 
+    Laser_I2C_init();
+    LaserStart();
     // 初始化lora
-    lora.begin();
+    // lora.begin();
 
-/** */
+/** *
     // 初始化按键GPIO
     pinMode(BUTTON_PIN, INPUT_PULLUP);
     attachInterrupt(BUTTON_PIN, buttonISR, FALLING);
-/** */
+/** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
         buttonTask,        // 任务函数
@@ -87,18 +90,18 @@ void setup() {
         1                 // 运行核心 (1 = 核心1)
     );
 
-/** *
+/** */
   // 创建激光测距任务
     xTaskCreatePinnedToCore(
         laserTask,           // 任务函数
         "LaserTask",         // 任务名称
-        10000,               // 堆栈大小
+        4096,               // 堆栈大小
         NULL,                // 任务参数
         1,                   // 任务优先级
         &laserTaskHandle,    // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -131,7 +134,7 @@ void setup() {
         &LedTaskHandle,  // 任务句柄
         1                // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
   // 创建LoRa测试任务
     xTaskCreatePinnedToCore(
         loraTestTask,           // 任务函数
@@ -171,13 +174,20 @@ void loop() {
 // 激光测距任务
 void laserTask(void *pvParameters) 
 {
+    /** *
   // 初始化激光模块
+    // Serial.println("Laser init...");
     laser.begin();
     laser.sendReadCommand();
+    /** */
   // 任务主循环
     while (1) {
-        int16_t distance = laser.receiveReadResponse();
-
+        int16_t distance = readDistance();
+        /* *
+        Serial.print("Distance: ");
+        Serial.print(distance);
+        Serial.println(" mm");
+        /* */
         if (distance != -1) {
             // Serial.println(distance); 
             processLaserData(distance);
