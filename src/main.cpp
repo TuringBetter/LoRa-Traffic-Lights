@@ -17,7 +17,7 @@
 // Laser_i2c       laser;
 // Accelerometer   accelerometer;
 Led             led;
-LoRa            lora;
+// LoRa            lora;
 
 // 任务句柄
 // TaskHandle_t laserTaskHandle   = NULL;
@@ -25,7 +25,7 @@ LoRa            lora;
 TaskHandle_t LedTaskHandle     = NULL;
 TaskHandle_t LedTestTaskHandle = NULL;
 // TaskHandle_t ButtonTaskHandle  = NULL;
-TaskHandle_t loraTestTaskHandle  = NULL;
+// TaskHandle_t loraTestTaskHandle  = NULL;
 TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
 
 // 任务函数
@@ -34,8 +34,8 @@ TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
 void ledTask(void* pvParameters);
 void ledTestTask(void* pvParameters);
 void buttonTask(void* pvParameters);
-void loraTestTask(void* pvParameters);
-void latencyTask(void* pvParameters);  // 延迟测量任务函数
+// void loraTestTask(void* pvParameters);
+// void latencyTask(void* pvParameters);  // 延迟测量任务函数
 
 // =========================辅助变量======================
 // 激光测距相关变量
@@ -80,6 +80,7 @@ void setup() {
     Laser_I2C_init();
     LaserStart();
     Acc_init();
+    LoRa_init();
 /** *
     // 初始化按键GPIO
     pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -140,7 +141,7 @@ void setup() {
         &LedTaskHandle,  // 任务句柄
         1                // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
   // 创建LoRa测试任务
     xTaskCreatePinnedToCore(
         loraTestTask,           // 任务函数
@@ -387,7 +388,7 @@ void buttonTask(void* pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
     }
 }
-/**/
+/**
 void loraTestTask(void *pvParameters)
 {
     // lora.begin();
@@ -397,7 +398,8 @@ void loraTestTask(void *pvParameters)
         vTaskDelay(pdMS_TO_TICKS(100));  // 100ms延时
     }
 }
-
+/**/
+/**
 // 延迟测量任务实现
 void latencyTask(void* pvParameters) {
     const TickType_t xDelay = pdMS_TO_TICKS(10*60*1000);  // 每10min测量一次延迟
@@ -414,8 +416,9 @@ void latencyTask(void* pvParameters) {
             Serial.print(latency);
             Serial.println(" ms");
         }
-        /** */
+        /** *
         // 任务延时
         vTaskDelay(xDelay);
     }
 }
+/**/

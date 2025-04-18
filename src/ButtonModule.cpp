@@ -18,6 +18,7 @@ void Button_init()
 
 void buttonTask(void *pvParameters)
 {
+    // UBaseType_t uxHighWaterMark;  // 堆栈监控变量
     while(true) {
         if(buttonPressed) {
             // 检查是否超过消抖时间
@@ -28,6 +29,15 @@ void buttonTask(void *pvParameters)
                 buttonPressed = false;
             }
         }
+        // 堆栈使用量监控代码（已注释）
+        /*
+        static unsigned long lastCheckTime = 0;
+        if (millis() - lastCheckTime >= 5000) {
+            uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+            Serial.printf("ButtonTask Stack High Water Mark: %u bytes remaining\n", uxHighWaterMark);
+            lastCheckTime = millis();
+        }
+        */
         vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
     }
 }

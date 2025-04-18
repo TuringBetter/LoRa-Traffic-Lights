@@ -2,11 +2,19 @@
 #include <Arduino.h>
 #include <string>
 #include "LedModule.h"
-
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 // 声明外部变量
 extern LedState _ledState;
 extern bool _ledStateChanged;
+
+
 extern SemaphoreHandle_t _ledStateMutex;
+extern TaskHandle_t loraTestTaskHandle;
+
+void LoRa_init();
+void sendData(const String& payload);
+void loraTestTask(void* pvParameters);
 
 class LoRa {
 public:
