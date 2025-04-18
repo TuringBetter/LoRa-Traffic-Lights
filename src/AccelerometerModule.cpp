@@ -1,8 +1,6 @@
 #include "AccelerometerModule.h"
 #include <Arduino.h>
 #include "LoRaModule.h"
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 
 
 /** *
@@ -97,6 +95,8 @@ static const int        COLLISION_THRESHOLD = 3;     // 碰撞检测阈值
 static const uint32_t   COLLISION_TIMEOUT   = 2000;   // 碰撞超时时间（毫秒）
 static       bool       _collisionDetected  = false;
 static       uint32_t   _lastCollisionDetectionTime=0;
+
+TaskHandle_t AccTaskHandle     = NULL;
 
 static void writeRegister(uint8_t reg, uint8_t value);
 

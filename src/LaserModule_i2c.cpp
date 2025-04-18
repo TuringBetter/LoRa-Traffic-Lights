@@ -1,8 +1,6 @@
 #include "LaserModule_i2c.h"
 #include <Wire.h>
 #include "LedModule.h"
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 
 
 static const uint64_t   LASER_I2C_SDA_PIN = 8;
@@ -16,6 +14,9 @@ static uint32_t         _lastVehicleDetectionTime;
 extern SemaphoreHandle_t   _ledStateMutex;
 extern LedState            _ledState;
 extern bool                _ledStateChanged;
+
+TaskHandle_t laserTaskHandle   = NULL;
+
 
 static void processLaserData(int16_t distance);
 

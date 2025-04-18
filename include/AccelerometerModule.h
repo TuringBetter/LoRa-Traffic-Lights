@@ -1,5 +1,10 @@
 #pragma once
 #include <Wire.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+extern TaskHandle_t AccTaskHandle;
+
 enum Range {
     RANGE_2G = 0x00,
     RANGE_4G = 0x01,
