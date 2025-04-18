@@ -8,61 +8,22 @@
 #include "LoRaModule.h"
 // put function declarations here:
 
-// 配置参数
-// static const int        VEHICLE_DETECTION_THRESHOLD = 500;    // 车辆检测阈值（厘米）
-// static const uint32_t   VEHICLE_TIMEOUT             = 500;    // 车辆超时时间（毫秒）
-
-// 传感器模块
-// Laser_uart      laser;
-// Laser_i2c       laser;
-// Accelerometer   accelerometer;
 Led             led;
-// LoRa            lora;
 
-// 任务句柄
-// TaskHandle_t laserTaskHandle   = NULL;
-// TaskHandle_t AccTaskHandle     = NULL;
 TaskHandle_t LedTaskHandle     = NULL;
 TaskHandle_t LedTestTaskHandle = NULL;
-// TaskHandle_t ButtonTaskHandle  = NULL;
-// TaskHandle_t loraTestTaskHandle  = NULL;
-// TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
 
-// 任务函数
-// void laserTask(void *pvParameters);
-// void accelerometerTask(void* pvParameters);
 void ledTask(void* pvParameters);
 void ledTestTask(void* pvParameters);
-void buttonTask(void* pvParameters);
-// void loraTestTask(void* pvParameters);
-// void latencyTask(void* pvParameters);  // 延迟测量任务函数
+
 
 // =========================辅助变量======================
-// 激光测距相关变量
-// bool                _vehicleDetected;
-// uint32_t            _lastVehicleDetectionTime;
 
 // Led相关变量
 LedState            _ledState{LedColor::YELLOW,500,0};
 bool                _ledStateChanged{false};
 SemaphoreHandle_t   _ledStateMutex;
 
-/* *
-// 按键相关变量
-volatile bool           buttonPressed   = false;
-volatile unsigned long  buttonPressTime = 0;  // 按键按下的时间戳
-const int               BUTTON_PIN      = 48;
-const unsigned long     DEBOUNCE_TIME   = 20;      // 消抖时间（毫秒）
-/**/
-
-//======================== 辅助函数======================
-// void processLaserData(int16_t distance);
-/**
-// 按键中断处理函数
-void IRAM_ATTR buttonISR() {
-    buttonPressTime = millis();
-    buttonPressed = true;
-}
 /**/
 void setup() {
     Serial.begin(115200);
@@ -81,10 +42,7 @@ void setup() {
     LaserStart();
     Acc_init();
     LoRa_init();
-/** *
-    // 初始化按键GPIO
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
-    attachInterrupt(BUTTON_PIN, buttonISR, FALLING);
+
 /** */
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
@@ -170,59 +128,11 @@ void setup() {
 }
 
 void loop() {
-/** *
-    lora.sendData(LoRa::SendMode::UNCONFIRMED,1,"06");
-    delay(1000);
-/** */
+
 }
 
 // put function definitions here:
-/** *
-// 激光测距任务
-void laserTask(void *pvParameters) 
-{
-    /** *
-  // 初始化激光模块
-    // Serial.println("Laser init...");
-    laser.begin();
-    laser.sendReadCommand();
-    /** *
-  // 任务主循环
-    while (1) {
-        int16_t distance = readDistance();
-        /* *
-        Serial.print("Distance: ");
-        Serial.print(distance);
-        Serial.println(" mm");
-        /* *
-        if (distance != -1) {
-            // Serial.println(distance); 
-            processLaserData(distance);
-        }
-        
-        // 添加一个小延时，避免过于频繁的读取
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-}
-/** *
-// 加速度计任务
-void accelerometerTask(void* pvParameters)
-{
-    accelerometer.begin();
-    while(true)
-    {
-        int16_t x, y, z;
-        // 读取加速度计数据
-        accelerometer.readRaw(x, y, z);
-        
-        // 处理加速度数据
-        accelerometer.processDate(x, y, z);
-        
-        // 任务延时
-        vTaskDelay(pdMS_TO_TICKS(100));  // 100ms
-    }
-}
-/**/
+
 void ledTask(void *pvParameters)
 {
     led.begin();
@@ -314,111 +224,3 @@ void ledTestTask(void *pvParameters)
         led.update();
     }
 }
-
-/* *
-void processLaserData(int16_t distance)
-{
-    // 检查是否有车辆接近
-    if (distance < VEHICLE_DETECTION_THRESHOLD) 
-    {
-        if (!_vehicleDetected) 
-        {
-            _vehicleDetected = true;
-            _lastVehicleDetectionTime = millis();
-            
-            // 发送车辆接近消息
-            // sendLoRaMessage(MessageType::VEHICLE_APPROACHING, _lightId + 1);
-            // sendLoRaMessage(MessageType::VEHICLE_APPROACHING, _lightId + 2);
-            
-            // 灯亮
-            Serial.println("vehicle detected!");
-            if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
-            {
-                // 更新灯状态
-                _ledState.color=LedColor::RED;
-                _ledState.frequency=60;
-                _ledState.brightness=7000;
-
-                _ledStateChanged=true;
-
-                xSemaphoreGive(_ledStateMutex);
-            }
-        }
-    } 
-    else 
-    {
-        // 检查车辆是否已经通过
-        if (_vehicleDetected && (millis() - _lastVehicleDetectionTime > VEHICLE_TIMEOUT)) {
-            _vehicleDetected = false;
-            
-            // 发送车辆已通过消息
-            // sendLoRaMessage(MessageType::VEHICLE_PASSED, _lightId + 1);
-            // sendLoRaMessage(MessageType::VEHICLE_PASSED, _lightId + 2);
-            
-            // 更新LED状态
-            Serial.println("vehicle left");
-            if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
-            {
-                // 更新灯状态
-                _ledState.color=LedColor::YELLOW;
-                _ledState.frequency=0;
-                _ledState.brightness=1000;
-
-                _ledStateChanged=true;
-                
-                xSemaphoreGive(_ledStateMutex);
-            }
-        }
-    }
-}
-/* */
-/* *
-// 按键检测任务实现
-void buttonTask(void* pvParameters) {
-    while(true) {
-        if(buttonPressed) {
-            // 检查是否超过消抖时间
-            if(millis() - buttonPressTime >= DEBOUNCE_TIME) {
-                // 上传云端报警
-                Serial.println("pressed");
-                lora.sendData(LoRa::SendMode::UNCONFIRMED,1,"07");
-                buttonPressed = false;
-            }
-        }
-        vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
-    }
-}
-/**
-void loraTestTask(void *pvParameters)
-{
-    // lora.begin();
-    while(true)
-    {
-        lora.receiveData();
-        vTaskDelay(pdMS_TO_TICKS(100));  // 100ms延时
-    }
-}
-/**/
-/**
-// 延迟测量任务实现
-void latencyTask(void* pvParameters) {
-    const TickType_t xDelay = pdMS_TO_TICKS(10*60*1000);  // 每10min测量一次延迟
-    
-    while(true) {
-        // 测量通信延迟
-        lora.measureLatency();
-        /** *
-        // 获取并打印延迟值
-        uint32_t latency = lora.getLatency();
-        if(latency!=0)
-        {
-            Serial.print("当前通信延迟: ");
-            Serial.print(latency);
-            Serial.println(" ms");
-        }
-        /** *
-        // 任务延时
-        vTaskDelay(xDelay);
-    }
-}
-/**/
