@@ -1,15 +1,22 @@
 #pragma once
 #include <Wire.h>
+enum Range {
+    RANGE_2G = 0x00,
+    RANGE_4G = 0x01,
+    RANGE_8G = 0x02,
+    RANGE_16G = 0x03
+};
 
+void Acc_init();
+void processDate(int16_t x, int16_t y, int16_t z);
+void readRaw(int16_t &x, int16_t &y, int16_t &z);
+
+void accelerometerTask(void* pvParameters);
+
+/** *
 class Accelerometer {
 public:
-    enum Range {
-        RANGE_2G = 0x00,
-        RANGE_4G = 0x01,
-        RANGE_8G = 0x02,
-        RANGE_16G = 0x03
-    };
-    static const int        COLLISION_THRESHOLD         = 10;     // 碰撞检测阈值
+    static const int        COLLISION_THRESHOLD         = 3;     // 碰撞检测阈值
     static const uint32_t   COLLISION_TIMEOUT           = 2000;   // 碰撞超时时间（毫秒）
 
 public:
@@ -31,3 +38,4 @@ private:
     void writeRegister(uint8_t reg, uint8_t value);
     uint8_t readRegister(uint8_t reg) const;
 };
+/** */

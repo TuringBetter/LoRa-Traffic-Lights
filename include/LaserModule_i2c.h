@@ -6,6 +6,11 @@
 #define DIST_HIGH_REG   0x00   // 距离高字节寄存器
 #define DIST_LOW_REG    0x01   // 距离低字节寄存器
 
+// extern TaskHandle_t         laserTaskHandle;
+
+
+void laserTask(void *pvParameters);
+
 void Laser_I2C_init();
 void LaserStart();
 int16_t readDistance();

@@ -8,13 +8,13 @@
 // put function declarations here:
 
 // 配置参数
-static const int        VEHICLE_DETECTION_THRESHOLD = 500;    // 车辆检测阈值（厘米）
-static const uint32_t   VEHICLE_TIMEOUT             = 500;  // 车辆超时时间（毫秒）
+// static const int        VEHICLE_DETECTION_THRESHOLD = 500;    // 车辆检测阈值（厘米）
+// static const uint32_t   VEHICLE_TIMEOUT             = 500;    // 车辆超时时间（毫秒）
 
 // 传感器模块
 // Laser_uart      laser;
 // Laser_i2c       laser;
-Accelerometer   accelerometer;
+// Accelerometer   accelerometer;
 Led             led;
 LoRa            lora;
 
@@ -28,8 +28,8 @@ TaskHandle_t loraTestTaskHandle  = NULL;
 TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
 
 // 任务函数
-void laserTask(void *pvParameters);
-void accelerometerTask(void* pvParameters);
+// void laserTask(void *pvParameters);
+// void accelerometerTask(void* pvParameters);
 void ledTask(void* pvParameters);
 void ledTestTask(void* pvParameters);
 void buttonTask(void* pvParameters);
@@ -38,8 +38,8 @@ void latencyTask(void* pvParameters);  // 延迟测量任务函数
 
 // =========================辅助变量======================
 // 激光测距相关变量
-bool                _vehicleDetected;
-uint32_t            _lastVehicleDetectionTime;
+// bool                _vehicleDetected;
+// uint32_t            _lastVehicleDetectionTime;
 
 // Led相关变量
 LedState            _ledState{LedColor::YELLOW,500,0};
@@ -53,7 +53,7 @@ const int               BUTTON_PIN      = 48;
 const unsigned long     DEBOUNCE_TIME   = 20;      // 消抖时间（毫秒）
 
 //======================== 辅助函数======================
-void processLaserData(int16_t distance);
+// void processLaserData(int16_t distance);
 
 // 按键中断处理函数
 void IRAM_ATTR buttonISR() {
@@ -69,11 +69,13 @@ void setup() {
     _ledStateChanged=false;
     _ledStateMutex = xSemaphoreCreateMutex();
 
-    Laser_I2C_init();
-    LaserStart();
+
     // 初始化lora
     // lora.begin();
-
+/* */
+    Laser_I2C_init();
+    LaserStart();
+    Acc_init();
 /** *
     // 初始化按键GPIO
     pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -101,7 +103,7 @@ void setup() {
         &laserTaskHandle,    // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -170,7 +172,7 @@ void loop() {
 }
 
 // put function definitions here:
-
+/** *
 // 激光测距任务
 void laserTask(void *pvParameters) 
 {
@@ -179,7 +181,7 @@ void laserTask(void *pvParameters)
     // Serial.println("Laser init...");
     laser.begin();
     laser.sendReadCommand();
-    /** */
+    /** *
   // 任务主循环
     while (1) {
         int16_t distance = readDistance();
@@ -187,7 +189,7 @@ void laserTask(void *pvParameters)
         Serial.print("Distance: ");
         Serial.print(distance);
         Serial.println(" mm");
-        /* */
+        /* *
         if (distance != -1) {
             // Serial.println(distance); 
             processLaserData(distance);
@@ -197,7 +199,7 @@ void laserTask(void *pvParameters)
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
-
+/** *
 // 加速度计任务
 void accelerometerTask(void* pvParameters)
 {
@@ -215,7 +217,7 @@ void accelerometerTask(void* pvParameters)
         vTaskDelay(pdMS_TO_TICKS(100));  // 100ms
     }
 }
-
+/**/
 void ledTask(void *pvParameters)
 {
     led.begin();
@@ -308,6 +310,7 @@ void ledTestTask(void *pvParameters)
     }
 }
 
+/* *
 void processLaserData(int16_t distance)
 {
     // 检查是否有车辆接近
@@ -363,7 +366,7 @@ void processLaserData(int16_t distance)
         }
     }
 }
-
+/* */
 // 按键检测任务实现
 void buttonTask(void* pvParameters) {
     while(true) {
