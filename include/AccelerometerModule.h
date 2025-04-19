@@ -13,7 +13,5 @@ enum Range {
 };
 
 void Acc_init();
-void processDate(int16_t x, int16_t y, int16_t z);
-void readRaw(int16_t &x, int16_t &y, int16_t &z);
 
 void accelerometerTask(void* pvParameters);

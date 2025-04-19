@@ -1,4 +1,5 @@
 #include "ButtonModule.h"
+#include "LoRaModule.h"
 
 volatile static bool           buttonPressed   = false;
 volatile static unsigned long  buttonPressTime = 0;  // 按键按下的时间戳
@@ -24,8 +25,8 @@ void buttonTask(void *pvParameters)
             // 检查是否超过消抖时间
             if(millis() - buttonPressTime >= DEBOUNCE_TIME) {
                 // 上传云端报警
-                Serial.println("pressed");
-                // lora.sendData(LoRa::SendMode::UNCONFIRMED,1,"07");
+                // Serial.println("pressed");
+                sendData("07");
                 buttonPressed = false;
             }
         }

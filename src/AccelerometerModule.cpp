@@ -13,6 +13,8 @@ static       uint32_t   _lastCollisionDetectionTime=0;
 TaskHandle_t AccTaskHandle     = NULL;
 
 static void writeRegister(uint8_t reg, uint8_t value);
+static void processDate(int16_t x, int16_t y, int16_t z);
+static void readRaw(int16_t &x, int16_t &y, int16_t &z);
 
 /**/
 void Acc_init()
@@ -35,8 +37,8 @@ void processDate(int16_t x, int16_t y, int16_t z)
             _lastCollisionDetectionTime = millis();
             
             // 打印碰撞信息
-            Serial.printf("Collision detected! Acceleration: %.3lf\n", acceleration);
-            // lora.sendData(LoRa::SendMode::UNCONFIRMED,1,"08");
+            // Serial.printf("Collision detected! Acceleration: %.3lf\n", acceleration);
+            sendData("08");
         }
     } else {
         // 检查碰撞状态是否已经恢复

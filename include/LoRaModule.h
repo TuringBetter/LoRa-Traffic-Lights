@@ -4,6 +4,14 @@
 #include "LedModule.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+
+struct ScheduledCommand 
+{
+    uint8_t port;
+    String payload;
+    uint32_t executeTime;
+};
+
 // 声明外部变量
 extern LedState _ledState;
 extern bool _ledStateChanged;
@@ -17,7 +25,6 @@ void latencyTask(void* pvParameters);  // 延迟测量任务函数
 
 void LoRa_init();
 void sendData(const String& payload);
-uint32_t getLatency();  // 获取当前延迟值
 
 class LoRa {
 public:
@@ -45,11 +52,6 @@ private:
 
     // 同步控制相关变量
     static const uint32_t SYNC_DELAY_MS = 1000;  // 同步延迟时间（1秒）
-    struct ScheduledCommand {
-        uint8_t port;
-        String payload;
-        uint32_t executeTime;
-    };
     ScheduledCommand scheduledCommand;  // 存储待执行的命令
     bool hasScheduledCommand = false;   // 是否有待执行的命令
 };

@@ -19,6 +19,7 @@ TaskHandle_t laserTaskHandle   = NULL;
 
 
 static void processLaserData(int16_t distance);
+static int16_t readDistance();
 
 void Laser_I2C_init()
 {

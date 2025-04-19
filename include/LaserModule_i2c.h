@@ -15,4 +15,3 @@ void laserTask(void *pvParameters);
 
 void Laser_I2C_init();
 void LaserStart();
-int16_t readDistance();

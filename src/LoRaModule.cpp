@@ -194,16 +194,23 @@ SemaphoreHandle_t latencySemaphore;  // 延迟测量完成信号量
 TaskHandle_t loraTestTaskHandle  = NULL;
 TaskHandle_t latencyTaskHandle   = NULL;  // 延迟测量任务句柄
 
-static uint32_t LoRa_Connect_Delay = 0;    // 通信延迟时间
+static uint32_t LoRa_Connect_Delay = 800;    // 通信延迟时间
 static uint32_t LoRa_Send_TIME = 0;        // 发送时间
 static uint32_t LoRa_Recv_TIME = 0;        // 接收时间
 static bool     waitingForResponse=false;
 
+
+static const uint32_t SYNC_DELAY_MS = 1000;  // 同步延迟时间（1秒）
+static ScheduledCommand scheduledCommand;  // 存储待执行的命令
+static bool hasScheduledCommand = false;   // 是否有待执行的命
+
 static void receiveData();
 static void measureLatency();
+static void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms);
+static void handlePayload(uint8_t port, const String& payload);
+static uint32_t getLatency();
 
 void sendData(const String &payload);
-uint32_t getLatency();
 
 void LoRa_init()
 {
@@ -228,7 +235,7 @@ void sendData(const String &payload)
     command += ",";
     command += payload;
 
-    Serial.println(command);
+    // Serial.println(command);
     // 发送命令
     Serial1.println(command);
 }
@@ -236,9 +243,12 @@ void sendData(const String &payload)
 uint32_t getLatency()
 {
     // 等待延迟测量完成
-    if (xSemaphoreTake(latencySemaphore, pdMS_TO_TICKS(5000)) == pdTRUE) {
+    if (xSemaphoreTake(latencySemaphore, pdMS_TO_TICKS(5000)) == pdTRUE) 
+    {
         return LoRa_Connect_Delay;
-    } else {
+    } 
+    else 
+    {
         // Serial.println("获取延迟值超时");
         return 0;
     }
@@ -248,9 +258,10 @@ static void receiveData()
 {
     static int parseState = 0;  // 0: 等待rx行, 1: 等待payload行
     static uint8_t currentPort = 0;
-/** *
+/** */
     // 检查是否有待执行的命令
-    if (hasScheduledCommand && millis() >= scheduledCommand.executeTime) {
+    if (hasScheduledCommand && millis() >= scheduledCommand.executeTime) 
+    {
         handlePayload(scheduledCommand.port, scheduledCommand.payload);
         hasScheduledCommand = false;
     }
@@ -289,7 +300,7 @@ static void receiveData()
             Serial.println("[LoRa]: "+response);
             /** */
             parseState = 0;
-            /** *
+            /** */
             // 计算延迟执行时间
             uint32_t compensationDelay = SYNC_DELAY_MS - LoRa_Connect_Delay;
             scheduleCommand(currentPort, response, compensationDelay);
@@ -316,13 +327,13 @@ void loraTestTask(void *pvParameters)
 
 void latencyTask(void *pvParameters)
 {
-    // const TickType_t xDelay = pdMS_TO_TICKS(10*60*1000);  // 每10min测量一次延迟
-    const TickType_t xDelay = pdMS_TO_TICKS(1*2*1000);  // 每10min测量一次延迟
+    const TickType_t xDelay = pdMS_TO_TICKS(10*60*1000);  // 每10min测量一次延迟
+    // const TickType_t xDelay = pdMS_TO_TICKS(1*2*1000);  // 每10min测量一次延迟
     
     while(true) {
         // 测量通信延迟
         measureLatency();
-        /** */
+        /** *
         // 获取并打印延迟值
         uint32_t latency = getLatency();
         if(latency!=0)
@@ -335,4 +346,46 @@ void latencyTask(void *pvParameters)
         // 任务延时
         vTaskDelay(xDelay);
     }    
+}
+void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms) 
+{
+    scheduledCommand.port = port;
+    scheduledCommand.payload = payload;
+    scheduledCommand.executeTime = millis() + delay_ms;
+    hasScheduledCommand = true;
+}
+
+void handlePayload(uint8_t port, const String& payload)
+{
+    if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) {
+        switch(port) {
+            case 10: 
+            {
+                Serial.println("change fre");
+                break;
+            }
+            case 11: 
+            {
+                Serial.println("change color");
+                break;
+            }
+            case 12: 
+            {
+                Serial.println("change manner");
+                break;
+            }
+            case 13: 
+            {
+                Serial.println("change brightness");
+                break;
+            }
+            case 20:
+                Serial.println("set pass");
+                break;
+            case 21:
+                Serial.println("set leave");
+                break;
+        }
+        xSemaphoreGive(_ledStateMutex);
+    }   
 }
