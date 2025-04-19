@@ -1,6 +1,6 @@
 #include "LoRaModule.h"
-
-/*初始化LoRa模块*/
+/**
+//初始化LoRa模块
 void LoRa::begin() 
 {
     Serial1.begin(9600, SERIAL_8N1, 18, 17);
@@ -44,7 +44,7 @@ void LoRa::receiveData()
         handlePayload(scheduledCommand.port, scheduledCommand.payload);
         hasScheduledCommand = false;
     }
-/** */
+/** *
     if (Serial1.available()) 
     {
         String response = Serial1.readStringUntil('\n'); // 读取一行响应
@@ -52,9 +52,9 @@ void LoRa::receiveData()
 
         // 检查是否是rx行
         if (response.startsWith("rx:")) {
-            /** */
+            /** *
             Serial.println("[LoRa]: "+response);
-            /** */
+            /** *
             parseState = 1;
             // 解析port值
             int portIndex = response.indexOf("port =");
@@ -73,15 +73,15 @@ void LoRa::receiveData()
         }
         // 检查是否是payload行（以0x开头）
         else if (parseState == 1 && response.indexOf("0x") >= 0) {
-            /** */
+            /** *
             Serial.println("[LoRa]: "+response);
-            /** */
+            /** *
             parseState = 0;
             /** *
             // 计算延迟执行时间
             uint32_t compensationDelay = SYNC_DELAY_MS - LoRa_Connect_Delay;
             scheduleCommand(currentPort, response, compensationDelay);
-            /** */
+            /** *
         }
     }
 }
@@ -184,7 +184,7 @@ void LoRa::handlePayload(uint8_t port, const String& payload) {
         xSemaphoreGive(_ledStateMutex);
     }
 }
-
+/**/
 /*==================================================================================*/
 
 static const uint64_t   LoRa_RX = 18;

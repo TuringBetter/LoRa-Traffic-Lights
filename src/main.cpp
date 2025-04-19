@@ -8,21 +8,12 @@
 #include "LoRaModule.h"
 // put function declarations here:
 
-Led             led;
-
-TaskHandle_t LedTaskHandle     = NULL;
-TaskHandle_t LedTestTaskHandle = NULL;
-
-void ledTask(void* pvParameters);
-void ledTestTask(void* pvParameters);
 
 
 // =========================辅助变量======================
 
 // Led相关变量
-LedState            _ledState{LedColor::YELLOW,500,0};
-bool                _ledStateChanged{false};
-SemaphoreHandle_t   _ledStateMutex;
+// LedState            _ledState{LedColor::YELLOW,500,0};
 
 /**/
 void setup() {
@@ -30,13 +21,12 @@ void setup() {
     Serial.println("系统初始化");
 /** */
     // 初始化led
-    _ledStateChanged=false;
-    _ledStateMutex = xSemaphoreCreateMutex();
 
 
     // 初始化lora
     // lora.begin();
 /* */
+    Led_init();
     Button_init();
     Laser_I2C_init();
     LaserStart();
@@ -88,7 +78,7 @@ void setup() {
         &LedTestTaskHandle,  // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
   // 创建灯光任务
     xTaskCreatePinnedToCore(
         ledTask,         // 任务函数
@@ -133,6 +123,7 @@ void loop() {
 
 // put function definitions here:
 
+/**
 void ledTask(void *pvParameters)
 {
     led.begin();
@@ -161,66 +152,4 @@ void ledTask(void *pvParameters)
 
 }
 
-void ledTestTask(void *pvParameters)
-{
-    led.begin();
-    static uint8_t test_state = 0;
-    static unsigned long lastStateChange = 0;
-    unsigned long currentTime = millis();
-    while(true)
-    {
-        currentTime = millis();
-        // 每5秒切换一次测试状态
-        if (currentTime - lastStateChange >= 5000) {
-            test_state = (test_state + 1) % 6;  // 6个测试状态循环
-            lastStateChange = currentTime;
-            
-            switch (test_state) {
-            case 0:
-                Serial.println("测试1: 红色LED,亮度500,不闪烁");
-                led.setColor(LedColor::RED);
-                led.setBrightness(500);
-                led.setFrequency(0);
-                break;
-                
-            case 1:
-                Serial.println("测试2: 红色LED,亮度2000,30Hz闪烁");
-                led.setColor(LedColor::RED);
-                led.setBrightness(2000);
-                led.setFrequency(30);
-                break;
-                
-            case 2:
-                Serial.println("测试3: 红色LED,亮度7000,60Hz闪烁");
-                led.setColor(LedColor::RED);
-                led.setBrightness(7000);
-                led.setFrequency(60);
-                break;
-                
-            case 3:
-                Serial.println("测试4: 黄色LED,亮度1000,不闪烁");
-                led.setColor(LedColor::YELLOW);
-                led.setBrightness(1000);
-                led.setFrequency(0);
-                break;
-                
-            case 4:
-                Serial.println("测试5: 黄色LED,亮度4000,120Hz闪烁");
-                led.setColor(LedColor::YELLOW);
-                led.setBrightness(4000);
-                led.setFrequency(120);
-                break;
-                
-            case 5:
-                Serial.println("测试6: 黄色LED,亮度2000,30Hz闪烁");
-                led.setColor(LedColor::YELLOW);
-                led.setBrightness(2000);
-                led.setFrequency(30);
-                break;
-            }
-        }
-        
-        // 更新LED状态（实现闪烁效果）
-        led.update();
-    }
-}
+/** */

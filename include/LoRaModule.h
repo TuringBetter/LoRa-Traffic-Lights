@@ -25,7 +25,7 @@ void latencyTask(void* pvParameters);  // 延迟测量任务函数
 
 void LoRa_init();
 void sendData(const String& payload);
-
+/**
 class LoRa {
 public:
     enum SendMode {
@@ -55,3 +55,4 @@ private:
     ScheduledCommand scheduledCommand;  // 存储待执行的命令
     bool hasScheduledCommand = false;   // 是否有待执行的命令
 };
+/**/

@@ -12,8 +12,8 @@ static bool             _vehicleDetected;
 static uint32_t         _lastVehicleDetectionTime;
 
 extern SemaphoreHandle_t   _ledStateMutex;
-extern LedState            _ledState;
 extern bool                _ledStateChanged;
+extern LedState            ledstate;
 
 TaskHandle_t laserTaskHandle   = NULL;
 
@@ -112,12 +112,13 @@ static void processLaserData(int16_t distance)
             if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
             {
                 // 更新灯状态
-                _ledState.color=LedColor::RED;
-                _ledState.frequency=60;
-                _ledState.brightness=7000;
+                /**/
+                ledstate.color=LedColor::RED;
+                ledstate.freq=60;
+                ledstate.brightness=7000;
 
                 _ledStateChanged=true;
-
+                /**/
                 xSemaphoreGive(_ledStateMutex);
             }
         }
@@ -137,12 +138,13 @@ static void processLaserData(int16_t distance)
             if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
             {
                 // 更新灯状态
-                _ledState.color=LedColor::YELLOW;
-                _ledState.frequency=0;
-                _ledState.brightness=1000;
+                /**/
+                ledstate.color=LedColor::YELLOW;
+                ledstate.freq=0;
+                ledstate.brightness=1000;
 
                 _ledStateChanged=true;
-                
+                /**/
                 xSemaphoreGive(_ledStateMutex);
             }
         }
