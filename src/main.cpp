@@ -8,24 +8,10 @@
 #include "LoRaModule.h"
 // put function declarations here:
 
-
-
-// =========================辅助变量======================
-
-// Led相关变量
-// LedState            _ledState{LedColor::YELLOW,500,0};
-
-/**/
 void setup() {
     Serial.begin(115200);
     Serial.println("系统初始化");
-/** */
-    // 初始化led
 
-
-    // 初始化lora
-    // lora.begin();
-/* */
     Led_init();
     Button_init();
     Laser_I2C_init();
@@ -122,34 +108,3 @@ void loop() {
 }
 
 // put function definitions here:
-
-/**
-void ledTask(void *pvParameters)
-{
-    led.begin();
-    
-    while(true)
-    {
-        if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
-        {
-            if(_ledStateChanged)
-            {
-                // 更新灯状态
-                led.setState(_ledState);
-                
-                _ledStateChanged=false;
-            }
-            xSemaphoreGive(_ledStateMutex);
-        }
-
-
-        // 更新LED状态（实现闪烁效果）
-        led.update();
-
-        // 任务延时
-        vTaskDelay(pdMS_TO_TICKS(10));  // 10ms
-    }
-
-}
-
-/** */
