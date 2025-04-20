@@ -23,7 +23,8 @@ void buttonTask(void *pvParameters)
     while(true) {
         if(buttonPressed) {
             // 检查是否超过消抖时间
-            if(millis() - buttonPressTime >= DEBOUNCE_TIME) {
+            if(millis() - buttonPressTime >= DEBOUNCE_TIME) 
+            {
                 // 上传云端报警
                 // Serial.println("pressed");
                 sendData("07");

@@ -13,7 +13,7 @@ struct LedState
 {
     LedColor color;
     uint32_t brightness;
-    uint16_t freq;
+    uint16_t frequency;
 };
 
 
@@ -24,10 +24,10 @@ void ledTask(void* pvParameters);
 
 extern bool                _ledStateChanged;
 extern SemaphoreHandle_t   _ledStateMutex;
-extern LedState             ledstate;
+extern volatile LedState             ledstate;
 
 void Led_init();
-void setState(const LedState& ledstate);
+void setState(const volatile LedState& ledstate);
 // void setColor(LedColor color);
 // void setBrightness(uint32_t brightness);  // 500/1000/2000/4000/7000
 // void setFrequency(uint16_t freq);    // 30/60/120

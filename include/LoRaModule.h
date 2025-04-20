@@ -1,7 +1,6 @@
 #pragma once
 #include <Arduino.h>
 #include <string>
-#include "LedModule.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
@@ -12,12 +11,7 @@ struct ScheduledCommand
     uint32_t executeTime;
 };
 
-// 声明外部变量
-extern LedState _ledState;
-extern bool _ledStateChanged;
 
-
-extern SemaphoreHandle_t _ledStateMutex;
 extern TaskHandle_t loraTestTaskHandle;
 extern TaskHandle_t latencyTaskHandle;  // 延迟测量任务句柄
 void loraTestTask(void* pvParameters);

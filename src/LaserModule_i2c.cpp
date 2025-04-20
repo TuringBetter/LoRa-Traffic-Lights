@@ -1,6 +1,7 @@
 #include "LaserModule_i2c.h"
 #include <Wire.h>
 #include "LedModule.h"
+#include "LoRaModule.h"
 
 
 static const uint64_t   LASER_I2C_SDA_PIN = 8;
@@ -13,7 +14,7 @@ static uint32_t         _lastVehicleDetectionTime;
 
 extern SemaphoreHandle_t   _ledStateMutex;
 extern bool                _ledStateChanged;
-extern LedState            ledstate;
+extern volatile LedState            ledstate;
 
 TaskHandle_t laserTaskHandle   = NULL;
 
@@ -95,6 +96,11 @@ void laserTask(void *pvParameters)
 
 static void processLaserData(int16_t distance)
 {
+    static LedColor _last_color;
+    static uint16_t _last_frequency;
+    static uint16_t _last_brightness;
+
+
     // 检查是否有车辆接近
     if (distance < VEHICLE_DETECTION_THRESHOLD) 
     {
@@ -106,15 +112,20 @@ static void processLaserData(int16_t distance)
             // 发送车辆接近消息
             // sendLoRaMessage(MessageType::VEHICLE_APPROACHING, _lightId + 1);
             // sendLoRaMessage(MessageType::VEHICLE_APPROACHING, _lightId + 2);
-            
+            sendData("20");
             // 灯亮
-            Serial.println("vehicle detected!");
+            // Serial.println("vehicle detected!");
             if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
             {
+                // 保存历史状态
+                _last_color = ledstate.color;
+                _last_frequency = ledstate.frequency;
+                _last_brightness = ledstate.brightness;
+
                 // 更新灯状态
                 /**/
                 ledstate.color=LedColor::RED;
-                ledstate.freq=60;
+                ledstate.frequency=60;
                 ledstate.brightness=7000;
 
                 _ledStateChanged=true;
@@ -134,14 +145,13 @@ static void processLaserData(int16_t distance)
             // sendLoRaMessage(MessageType::VEHICLE_PASSED, _lightId + 2);
             
             // 更新LED状态
-            Serial.println("vehicle left");
+            // Serial.println("vehicle left");
             if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
             {
-                // 更新灯状态
-                /**/
-                ledstate.color=LedColor::YELLOW;
-                ledstate.freq=0;
-                ledstate.brightness=1000;
+                // 恢复为历史状态
+                ledstate.color = _last_color;
+                ledstate.frequency = _last_frequency;
+                ledstate.brightness = _last_brightness;
 
                 _ledStateChanged=true;
                 /**/

@@ -114,10 +114,10 @@ TaskHandle_t LedTaskHandle     = NULL;
 
 bool                _ledStateChanged{false};
 SemaphoreHandle_t   _ledStateMutex;
-LedState            ledstate{
+volatile LedState   ledstate{
                     .color=LedColor::YELLOW,
                     .brightness=5000,
-                    .freq=0};
+                    .frequency=0};
 
 static void updatePWM();
 static void update();
@@ -196,7 +196,7 @@ void setState(LedColor color, uint32_t brightness, uint16_t freq)
     updatePWM();
 }
 
-void setState(const LedState &ledstate)
+void setState(const volatile LedState &ledstate)
 {
     if (_currentColor != ledstate.color) 
     {
@@ -208,9 +208,9 @@ void setState(const LedState &ledstate)
     if (ledstate.brightness > 7000) return;
     _brightness = ledstate.brightness;
 
-    _frequency = ledstate.freq;
-    _isBlinking = (ledstate.freq > 0);
-    _currentState=(ledstate.freq==0);
+    _frequency = ledstate.frequency;
+    _isBlinking = (ledstate.frequency > 0);
+    _currentState=(ledstate.frequency==0);
 
     updatePWM();
 }
@@ -310,7 +310,22 @@ void ledTask(void *pvParameters)
         {
             if(_ledStateChanged)
             {
+                /**
                 // 更新灯状态
+                Serial.print("LED颜色: ");
+                if(ledstate.color == LedColor::RED)
+                {
+                    Serial.print("红色 ");
+                }
+                else if(ledstate.color == LedColor::YELLOW)
+                {
+                    Serial.print("黄色 ");
+                }
+                Serial.print("LED亮度: ");
+                Serial.print(ledstate.brightness);
+                Serial.print(" LED闪烁频率: ");
+                Serial.println(ledstate.frequency);
+                /**/
                 setState(ledstate);
                 
                 _ledStateChanged=false;
