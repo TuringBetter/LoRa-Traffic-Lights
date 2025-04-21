@@ -253,6 +253,10 @@ void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms)
 
 void handlePayload(uint8_t port, const String& payload)
 {
+    static LedColor _last_color;
+    static uint16_t _last_frequency;
+    static uint16_t _last_brightness;
+
     Serial.println("port: "+String(port)+" data: "+payload);
     if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) {
         switch(port) {
@@ -321,20 +325,79 @@ void handlePayload(uint8_t port, const String& payload)
                 }
                 break;
             }
+            case 15: // 设置整体状态
+            {
+                String payloadStr = payload;
+                int firstHex = payloadStr.indexOf("0x");
+                if (firstHex >= 0) 
+                {
+                    // 解析颜色（第1字节）
+                    uint8_t color = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
+                    ledstate.color = (color == 0x00) ? LedColor::RED : LedColor::YELLOW;
+
+                    // 解析频率（第2字节）
+                    int secondHex = payloadStr.indexOf("0x", firstHex + 4);
+                    if (secondHex >= 0) 
+                    {
+                        uint8_t freq = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
+                        switch(freq) 
+                        {
+                            case 0x1E: ledstate.frequency = 30; break;
+                            case 0x3C: ledstate.frequency = 60; break;
+                            case 0x78: ledstate.frequency = 120; break;
+                        }
+
+                        // 解析亮度（第3-4字节）
+                        int thirdHex = payloadStr.indexOf("0x", secondHex + 4);
+                        int fourthHex = payloadStr.indexOf("0x", thirdHex + 4);
+                        if (thirdHex >= 0 && fourthHex >= 0) 
+                        {
+                            uint8_t high = strtol(payloadStr.substring(thirdHex, thirdHex + 4).c_str(), NULL, 16);
+                            uint8_t low = strtol(payloadStr.substring(fourthHex, fourthHex + 4).c_str(), NULL, 16);
+                            uint16_t brightness = (high << 8) | low;
+                            ledstate.brightness = brightness;
+
+                            // 解析亮灯方式（第5字节）
+                            int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
+                            if (fifthHex >= 0) 
+                            {
+                                uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
+                                if (manner == 0x00) { // 闪烁
+                                    // 保持之前设置的频率
+                                } else if (manner == 0x01) { // 常亮
+                                    ledstate.frequency = 0;
+                                }
+                                _ledStateChanged = true;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
             case 20: // 车辆通过状态
             {
-                ledstate.color = LedColor::RED;
-                ledstate.brightness = 7000;
-                ledstate.frequency = 120;
-                _ledStateChanged = true;
+                // 保存历史状态
+                _last_color = ledstate.color;
+                _last_frequency = ledstate.frequency;
+                _last_brightness = ledstate.brightness;
+
+                // 更新灯状态
+                /**/
+                ledstate.color=LedColor::RED;
+                ledstate.frequency=60;
+                ledstate.brightness=7000;
+
+                _ledStateChanged=true;
                 break;
             }
             case 21: // 车辆离开状态
             {
-                ledstate.color = LedColor::YELLOW;
-                ledstate.brightness = 1000;
-                ledstate.frequency = 0; // 常亮
-                _ledStateChanged = true;
+                // 恢复为历史状态
+                ledstate.color = _last_color;
+                ledstate.frequency = _last_frequency;
+                ledstate.brightness = _last_brightness;
+
+                _ledStateChanged=true;
                 break;
             }
         }
