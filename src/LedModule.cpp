@@ -1,104 +1,5 @@
 #include "LedModule.h"
-/**
-Led::Led() : 
-    currentColor(LedColor::YELLOW),
-    brightness(500),
-    frequency(0),
-    isBlinking(false),
-    lastToggleTime(0),
-    currentState(false) {
-    
-}
-
-void Led::begin()
-{
-    // 配置GPIO引脚
-    pinMode(RED_PIN, OUTPUT);
-    pinMode(YELLOW_PIN, OUTPUT);
-    
-    // 设置LED PWM属性
-    // 使用低速通道，频率1KHz，8位分辨率
-    ledcSetup(0, 1000, 8);  // 通道0，1KHz PWM，8位分辨率
-    ledcSetup(1, 1000, 8);  // 通道1，1KHz PWM，8位分辨率
-    
-    // 将LED引脚附加到PWM通道
-    ledcAttachPin(RED_PIN, 0);
-    ledcAttachPin(YELLOW_PIN, 1);
-    
-    updatePWM();
-}
-
-void Led::setColor(LedColor color) {
-    if (currentColor != color) {
-        // 关闭当前LED
-        ledcWrite(currentColor == LedColor::RED ? 0 : 1, 0);
-        
-        currentColor = color;
-        updatePWM();
-    }
-}
-
-void Led::setBrightness(uint32_t value) {
-    // 验证亮度值是否合法
-    if (value != 500 && value != 1000 && value != 2000 && 
-        value != 4000 && value != 7000) {
-        return;
-    }
-    
-    brightness = value;
-    updatePWM();
-}
-
-void Led::setFrequency(uint16_t freq) {
-    // 验证频率值是否合法
-    if (freq != 0 && freq != 30 && freq != 60 && freq != 120) {
-        return;
-    }
-    
-    frequency = freq;
-    isBlinking = (freq > 0);
-    
-    // 如果频率为0，确保LED保持常亮状态
-    if (freq == 0) {
-        currentState = true;
-        updatePWM();
-    }
-}
-
-// void Led::setState(const LedState &ledState)
-// {
-//     setColor(ledState.color);
-//     setBrightness(ledState.brightness);
-//     setFrequency(ledState.frequency);
-// }
-
-void Led::update() {
-    if (!isBlinking) {
-        return;
-    }
-    
-    unsigned long currentTime = millis();
-    if (currentTime - lastToggleTime >= (1000 / frequency)) {
-        currentState = !currentState;
-        lastToggleTime = currentTime;
-        updatePWM();
-    }
-}
-
-void Led::updatePWM() {
-    uint32_t pwmValue = currentState ? brightness : 0;
-    uint8_t channel = (currentColor == LedColor::RED) ? 0 : 1;
-    
-    // 将亮度值映射到8位PWM范围(0-255)
-    pwmValue = map(pwmValue, 0, 7000, 0, 255);
-    ledcWrite(channel, pwmValue);
-}
-
-uint8_t Led::getCurrentPin() const {
-    return (currentColor == LedColor::RED) ? RED_PIN : YELLOW_PIN;
-}
-/**/
-/*=====================================================================================*/
+#include "LoRaModule.h"
 static const uint8_t          RED_PIN    = 45;    // 使用GPIO7作为红色LED控制
 static const uint8_t          YELLOW_PIN = 46; // 使用GPIO8作为黄色LED控制
 
@@ -106,7 +7,7 @@ static       LedColor        _currentColor;
 static       uint32_t        _brightness;  // PWM亮度值
 static       uint16_t        _frequency;   // 闪烁频率(Hz)
 static       unsigned long   _lastToggleTime;
-static       bool            _isBlinking;
+static       bool            _isBlinking{false};
 static       bool            _currentState;
 
 TaskHandle_t LedTestTaskHandle = NULL;
@@ -193,7 +94,7 @@ void setState(LedColor color, uint32_t brightness, uint16_t freq)
     _isBlinking = (freq > 0);
     _currentState=(freq==0);
 
-    updatePWM();
+    update();
 }
 
 void setState(const volatile LedState &ledstate)
@@ -303,42 +204,85 @@ void ledTestTask(void *pvParameters)
 
 void ledTask(void *pvParameters)
 {
-    
-    while(true)
+    static LedState last_ledstate;  // 保存上一次的LED状态
+    String payload;
+
+    while (true)
     {
-        if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
+        if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE)
         {
-            if(_ledStateChanged)
+            // 检查状态是否发生变化
+            if (ledstate.brightness != last_ledstate.brightness) 
             {
-                /**
-                // 更新灯状态
-                Serial.print("LED颜色: ");
-                if(ledstate.color == LedColor::RED)
+                // 亮度变化
+                if ((ledstate.brightness == 0 && last_ledstate.brightness > 0) || 
+                    (ledstate.brightness > 0 && last_ledstate.brightness == 0)) 
+                    {
+                    // 开关状态变化
+                    payload = "0x09 0x";
+                    payload += (ledstate.brightness > 0) ? "01" : "00";
+                    sendData(payload);
+                } 
+                else 
                 {
-                    Serial.print("红色 ");
+                    // 亮度值变化
+                    payload = "0x0A 0x";
+                    uint8_t high = (ledstate.brightness >> 8) & 0xFF;
+                    uint8_t low = ledstate.brightness & 0xFF;
+                    payload += String(high, HEX);
+                    payload += " 0x";
+                    payload += String(low, HEX);
+                    sendData(payload);
                 }
-                else if(ledstate.color == LedColor::YELLOW)
-                {
-                    Serial.print("黄色 ");
-                }
-                Serial.print("LED亮度: ");
-                Serial.print(ledstate.brightness);
-                Serial.print(" LED闪烁频率: ");
-                Serial.println(ledstate.frequency);
-                /**/
-                setState(ledstate);
-                
-                _ledStateChanged=false;
             }
+
+            if (ledstate.frequency != last_ledstate.frequency) 
+            {
+                if (ledstate.frequency > 0 && last_ledstate.frequency > 0) 
+                {
+                    // 闪烁频率变化
+                    payload = "0x0B 0x";
+                    switch(ledstate.frequency) {
+                        case 30: payload += "1E"; break;
+                        case 60: payload += "3C"; break;
+                        case 120: payload += "78"; break;
+                    }
+                    sendData(payload);
+                } 
+                else if ((ledstate.frequency == 0 && last_ledstate.frequency > 0) || 
+                          (ledstate.frequency > 0 && last_ledstate.frequency == 0)) 
+                          {
+                    // 常亮/闪烁切换
+                    payload = "0x0D 0x";
+                    payload += (ledstate.frequency == 0) ? "01" : "00";
+                    sendData(payload);
+                }
+            }
+
+            if (ledstate.color != last_ledstate.color) 
+            {
+                // 颜色变化
+                payload = "0x0C 0x";
+                payload += (ledstate.color == LedColor::RED) ? "00" : "01";
+                sendData(payload);
+            }
+
+            // 更新上一次状态
+            last_ledstate.color = ledstate.color;
+            last_ledstate.brightness = ledstate.brightness;
+            last_ledstate.frequency = ledstate.frequency;
+
+            // 更新LED状态
+            setState(ledstate);
             xSemaphoreGive(_ledStateMutex);
         }
+
         // 更新LED状态（实现闪烁效果）
         update();
 
         // 任务延时
         vTaskDelay(pdMS_TO_TICKS(10));  // 10ms
     }
-
 }
 
 /**/
