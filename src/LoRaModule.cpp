@@ -1,103 +1,34 @@
 #include "LoRaModule.h"
 #include "LedModule.h"
-/**
-void LoRa::handlePayload(uint8_t port, const String& payload) {
-    if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) {
-        switch(port) {
-            case 10: {
-                // 设置闪烁频率
-                uint8_t freq = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
-                switch(freq) {
-                    case 0x1E: 
-                        // Serial.println("设置闪烁频率: 30Hz");
-                        _ledState.frequency = 30;
-                        break;
-                    case 0x3C: 
-                        // Serial.println("设置闪烁频率: 60Hz");
-                        _ledState.frequency = 60;
-                        break;
-                    case 0x78: 
-                        // Serial.println("设置闪烁频率: 120Hz");
-                        _ledState.frequency = 120;
-                        break;
-                }
-                _ledStateChanged = true;
-                break;
-            }
-            case 11: {
-                // 设置LED颜色
-                uint8_t color = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
-                _ledState.color = color == 0 ? LedColor::RED : LedColor::YELLOW;
-                // Serial.println(color == 0 ? "设置颜色: 红色" : "设置颜色: 黄色");
-                _ledStateChanged = true;
-                break;
-            }
-            case 12: {
-                // 设置是否闪烁
-                uint8_t mode = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
-                _ledState.frequency = mode == 0 ? 60 : 0; // 闪烁时默认60Hz
-                // Serial.println(mode == 0 ? "设置模式: 闪烁" : "设置模式: 常亮");
-                _ledStateChanged = true;
-                break;
-            }
-            case 13: {
-                // 设置亮度
-                String payloadStr = payload;
-                int firstHex = payloadStr.indexOf("0x");
-                int secondHex = payloadStr.indexOf("0x", firstHex + 2);
-                if (firstHex >= 0 && secondHex >= 0) {
-                    uint8_t high = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
-                    uint8_t low = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
-                    uint16_t brightness = (high << 8) | low;
-                    _ledState.brightness = brightness;
-                    // Serial.print("设置亮度: ");
-                    // Serial.println(brightness);
-                    _ledStateChanged = true;
-                }
-                break;
-            }
-            case 20:
-                Serial.println("设置为车辆通过状态: 红色 + 亮度7000 + 120Hz");
-                _ledState.color = LedColor::RED;
-                _ledState.brightness = 7000;
-                _ledState.frequency = 120;
-                _ledStateChanged = true;
-                break;
-            case 21:
-                Serial.println("设置为车辆离开状态: 黄色 + 亮度1000 + 常亮");
-                _ledState.color = LedColor::YELLOW;
-                _ledState.brightness = 1000;
-                _ledState.frequency = 0;
-                _ledStateChanged = true;
-                break;
-        }
-        xSemaphoreGive(_ledStateMutex);
-    }
-}
-/**/
-/*==================================================================================*/
-
+// 内部局部变量
 static const uint64_t   LoRa_RX = 18;
 static const uint64_t   LoRa_TX = 17;
 
-SemaphoreHandle_t latencySemaphore;  // 延迟测量完成信号量
-TaskHandle_t loraTestTaskHandle  = NULL;
-TaskHandle_t latencyTaskHandle   = NULL;  // 延迟测量任务句柄
+static LedColor _last_color;
+static uint16_t _last_frequency;
+static uint16_t _last_brightness;
+static unsigned long _messageReceiveTime = 0;  // 记录车辆通过的时间
 
 static uint32_t LoRa_Connect_Delay = 800;    // 通信延迟时间
 static uint32_t LoRa_Send_TIME = 0;        // 发送时间
 static uint32_t LoRa_Recv_TIME = 0;        // 接收时间
 static bool     waitingForResponse=false;
 
+static const uint32_t SYNC_DELAY_MS = 1000;  // 同步延迟时间（1秒）
+static ScheduledCommand scheduledCommand;  // 存储待执行的命令
+static bool hasScheduledCommand = false;   // 是否有待执行的命
+
+// 外部使用的变量
+SemaphoreHandle_t latencySemaphore;  // 延迟测量完成信号量
+TaskHandle_t loraTestTaskHandle  = NULL;
+TaskHandle_t latencyTaskHandle   = NULL;  // 延迟测量任务句柄
+
+
 // 声明外部变量
 extern volatile LedState              ledstate;
 extern bool                 _ledStateChanged;
 extern SemaphoreHandle_t    _ledStateMutex;
 
-
-static const uint32_t SYNC_DELAY_MS = 1000;  // 同步延迟时间（1秒）
-static ScheduledCommand scheduledCommand;  // 存储待执行的命令
-static bool hasScheduledCommand = false;   // 是否有待执行的命
 
 static void receiveData();
 static void measureLatency();
@@ -243,7 +174,7 @@ void latencyTask(void *pvParameters)
         vTaskDelay(xDelay);
     }    
 }
-void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms) 
+void scheduleCommand(uint8_t port, const String &payload, uint32_t delay_ms)
 {
     scheduledCommand.port = port;
     scheduledCommand.payload = payload;
@@ -253,10 +184,6 @@ void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms)
 
 void handlePayload(uint8_t port, const String& payload)
 {
-    static LedColor _last_color;
-    static uint16_t _last_frequency;
-    static uint16_t _last_brightness;
-
     Serial.println("port: "+String(port)+" data: "+payload);
     if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) {
         switch(port) {
@@ -280,7 +207,6 @@ void handlePayload(uint8_t port, const String& payload)
             case 11: // 设置LED颜色
             {
                 uint8_t color = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
-                // Serial.printf(""+color);
                 ledstate.color = (color == 0x00) ? LedColor::RED : LedColor::YELLOW;
                 _ledStateChanged = true;
                 break;
@@ -305,11 +231,6 @@ void handlePayload(uint8_t port, const String& payload)
                     ledstate.brightness = brightness;
                     _ledStateChanged = true;
                 }
-                /**
-                uint16_t brightness = (payload[0] << 8) | payload[1]; // big-endian
-                ledstate.brightness = brightness;
-                _ledStateChanged = true;
-                /**/
                 break;
             }
             case 14: // 设备开关控制
@@ -381,26 +302,35 @@ void handlePayload(uint8_t port, const String& payload)
                 _last_frequency = ledstate.frequency;
                 _last_brightness = ledstate.brightness;
 
-                // 更新灯状态
-                /**/
-                ledstate.color=LedColor::RED;
-                ledstate.frequency=60;
-                ledstate.brightness=7000;
-
-                _ledStateChanged=true;
-                break;
-            }
-            case 21: // 车辆离开状态
-            {
-                // 恢复为历史状态
-                ledstate.color = _last_color;
-                ledstate.frequency = _last_frequency;
-                ledstate.brightness = _last_brightness;
-
-                _ledStateChanged=true;
+                // 更新为车辆通过状态
+                ledstate.color = LedColor::RED;
+                ledstate.frequency = 120;
+                ledstate.brightness = 7000;
+                _messageReceiveTime = millis();  // 记录当前时间
+                _ledStateChanged = true;
                 break;
             }
         }
         xSemaphoreGive(_ledStateMutex);
     }   
+}
+void ledAutoShutDownTask(void *pvParameters)
+{
+    while(true)
+    {
+        if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE)
+        {
+            // 检查车辆通过状态是否超时
+            if (_messageReceiveTime > 0 && (millis() - _messageReceiveTime) >= 5000) {
+                // 恢复为历史状态
+                ledstate.color = _last_color;
+                ledstate.frequency = _last_frequency;
+                ledstate.brightness = _last_brightness;
+                _messageReceiveTime = 0;  // 重置时间
+                _ledStateChanged = true;
+            }
+            xSemaphoreGive(_ledStateMutex);
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
+    }
 }

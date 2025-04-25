@@ -10,7 +10,6 @@
 
 extern TaskHandle_t         laserTaskHandle;
 
-
 void laserTask(void *pvParameters);
 
 void Laser_I2C_init();

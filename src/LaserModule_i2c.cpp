@@ -112,7 +112,7 @@ static void processLaserData(int16_t distance)
             // 发送车辆接近消息
             // sendLoRaMessage(MessageType::VEHICLE_APPROACHING, _lightId + 1);
             // sendLoRaMessage(MessageType::VEHICLE_APPROACHING, _lightId + 2);
-            sendData("20");
+            sendData("05");
             // 灯亮
             // Serial.println("vehicle detected!");
             if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
