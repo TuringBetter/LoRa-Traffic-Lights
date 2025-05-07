@@ -6,12 +6,14 @@
 #include "AccelerometerModule.h"
 #include "ButtonModule.h"
 #include "LoRaModule.h"
+#include "FlashingLightModule.h"
 // put function declarations here:
 
 void setup() {
     Serial.begin(115200);
     Serial.println("系统初始化");
 
+    FlashingLight_init();
     Led_init();
     Button_init();
     Laser_I2C_init();

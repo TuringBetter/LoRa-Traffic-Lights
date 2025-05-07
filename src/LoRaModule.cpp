@@ -1,5 +1,6 @@
 #include "LoRaModule.h"
 #include "LedModule.h"
+#include "FlashingLightModule.h"
 // 内部局部变量
 static const uint64_t   LoRa_RX = 18;
 static const uint64_t   LoRa_TX = 17;
@@ -185,133 +186,169 @@ void scheduleCommand(uint8_t port, const String &payload, uint32_t delay_ms)
 void handlePayload(uint8_t port, const String& payload)
 {
     Serial.println("port: "+String(port)+" data: "+payload);
-    if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) {
-        switch(port) {
+        switch(port) 
+        {
             case 10: // 设置闪烁频率
             {
-                uint8_t freq = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
-                switch(freq) {
-                    case 0x1E: // 30Hz
-                        ledstate.frequency = 30;
-                        break;
-                    case 0x3C: // 60Hz
-                        ledstate.frequency = 60;
-                        break;
-                    case 0x78: // 120Hz
-                        ledstate.frequency = 120;
-                        break;
+                if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
+                {
+                    uint8_t freq = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
+                    switch(freq) {
+                        case 0x1E: // 30Hz
+                            ledstate.frequency = 30;
+                            break;
+                        case 0x3C: // 60Hz
+                            ledstate.frequency = 60;
+                            break;
+                        case 0x78: // 120Hz
+                            ledstate.frequency = 120;
+                            break;
+                    }
+                    _ledStateChanged = true;
+                    xSemaphoreGive(_ledStateMutex);
                 }
-                _ledStateChanged = true;
                 break;
             }
             case 11: // 设置LED颜色
             {
-                uint8_t color = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
-                ledstate.color = (color == 0x00) ? LedColor::RED : LedColor::YELLOW;
-                _ledStateChanged = true;
+                if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
+                {
+                    uint8_t color = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
+                    ledstate.color = (color == 0x00) ? LedColor::RED : LedColor::YELLOW;
+                    _ledStateChanged = true;
+                    xSemaphoreGive(_ledStateMutex);
+                }
                 break;
             }
             case 12: // 设置是否闪烁
             {
-                uint8_t manner = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
-                ledstate.frequency = (manner == 0x00) ? 60 : 0; // 闪烁时默认60Hz，常亮时频率为0
-                _ledStateChanged = true;
+                if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
+                {
+                    uint8_t manner = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
+                    ledstate.frequency = (manner == 0x00) ? 60 : 0; // 闪烁时默认60Hz，常亮时频率为0
+                    _ledStateChanged = true;
+                    xSemaphoreGive(_ledStateMutex);
+                }
                 break;
             }
             case 13: // 设置亮度
             {
-                String payloadStr = payload;
-                int firstHex = payloadStr.indexOf("0x");
-                int secondHex = payloadStr.indexOf("0x", firstHex + 2);
-                if (firstHex >= 0 && secondHex >= 0) 
+                if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
                 {
-                    uint8_t high = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
-                    uint8_t low = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
-                    uint16_t brightness = (high << 8) | low;
-                    ledstate.brightness = brightness;
-                    _ledStateChanged = true;
+                    String payloadStr = payload;
+                    int firstHex = payloadStr.indexOf("0x");
+                    int secondHex = payloadStr.indexOf("0x", firstHex + 2);
+                    if (firstHex >= 0 && secondHex >= 0) 
+                    {
+                        uint8_t high = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
+                        uint8_t low = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
+                        uint16_t brightness = (high << 8) | low;
+                        ledstate.brightness = brightness;
+                        _ledStateChanged = true;
+                    }
+                    xSemaphoreGive(_ledStateMutex);
                 }
                 break;
             }
             case 14: // 设备开关控制
             {
-                String payloadStr = payload;
-                int firstHex = payloadStr.indexOf("0x");
-                if (firstHex >= 0) 
+                if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
                 {
-                    uint8_t status = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
-                    if (status == 0x00) ledstate.brightness = 0;
-                    else if (status == 0x01) ledstate.brightness = 500; // 默认亮度
-                    _ledStateChanged = true;
+                    String payloadStr = payload;
+                    int firstHex = payloadStr.indexOf("0x");
+                    if (firstHex >= 0) 
+                    {
+                        uint8_t status = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
+                        if (status == 0x00) ledstate.brightness = 0;
+                        else if (status == 0x01) ledstate.brightness = 500; // 默认亮度
+                        _ledStateChanged = true;
+                    }
+                    xSemaphoreGive(_ledStateMutex);
                 }
                 break;
             }
             case 15: // 设置整体状态
             {
-                String payloadStr = payload;
-                int firstHex = payloadStr.indexOf("0x");
-                if (firstHex >= 0) 
+                if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
                 {
-                    // 解析颜色（第1字节）
-                    uint8_t color = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
-                    ledstate.color = (color == 0x00) ? LedColor::RED : LedColor::YELLOW;
-
-                    // 解析频率（第2字节）
-                    int secondHex = payloadStr.indexOf("0x", firstHex + 4);
-                    if (secondHex >= 0) 
+                    String payloadStr = payload;
+                    int firstHex = payloadStr.indexOf("0x");
+                    if (firstHex >= 0) 
                     {
-                        uint8_t freq = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
-                        switch(freq) 
-                        {
-                            case 0x1E: ledstate.frequency = 30; break;
-                            case 0x3C: ledstate.frequency = 60; break;
-                            case 0x78: ledstate.frequency = 120; break;
-                        }
+                        // 解析颜色（第1字节）
+                        uint8_t color = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
+                        ledstate.color = (color == 0x00) ? LedColor::RED : LedColor::YELLOW;
 
-                        // 解析亮度（第3-4字节）
-                        int thirdHex = payloadStr.indexOf("0x", secondHex + 4);
-                        int fourthHex = payloadStr.indexOf("0x", thirdHex + 4);
-                        if (thirdHex >= 0 && fourthHex >= 0) 
+                        // 解析频率（第2字节）
+                        int secondHex = payloadStr.indexOf("0x", firstHex + 4);
+                        if (secondHex >= 0) 
                         {
-                            uint8_t high = strtol(payloadStr.substring(thirdHex, thirdHex + 4).c_str(), NULL, 16);
-                            uint8_t low = strtol(payloadStr.substring(fourthHex, fourthHex + 4).c_str(), NULL, 16);
-                            uint16_t brightness = (high << 8) | low;
-                            ledstate.brightness = brightness;
-
-                            // 解析亮灯方式（第5字节）
-                            int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
-                            if (fifthHex >= 0) 
+                            uint8_t freq = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
+                            switch(freq) 
                             {
-                                uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
-                                if (manner == 0x00) { // 闪烁
-                                    // 保持之前设置的频率
-                                } else if (manner == 0x01) { // 常亮
-                                    ledstate.frequency = 0;
+                                case 0x1E: ledstate.frequency = 30; break;
+                                case 0x3C: ledstate.frequency = 60; break;
+                                case 0x78: ledstate.frequency = 120; break;
+                            }
+
+                            // 解析亮度（第3-4字节）
+                            int thirdHex = payloadStr.indexOf("0x", secondHex + 4);
+                            int fourthHex = payloadStr.indexOf("0x", thirdHex + 4);
+                            if (thirdHex >= 0 && fourthHex >= 0) 
+                            {
+                                uint8_t high = strtol(payloadStr.substring(thirdHex, thirdHex + 4).c_str(), NULL, 16);
+                                uint8_t low = strtol(payloadStr.substring(fourthHex, fourthHex + 4).c_str(), NULL, 16);
+                                uint16_t brightness = (high << 8) | low;
+                                ledstate.brightness = brightness;
+
+                                // 解析亮灯方式（第5字节）
+                                int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
+                                if (fifthHex >= 0) 
+                                {
+                                    uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
+                                    if (manner == 0x00) { // 闪烁
+                                        // 保持之前设置的频率
+                                    } else if (manner == 0x01) { // 常亮
+                                        ledstate.frequency = 0;
+                                    }
+                                    _ledStateChanged = true;
                                 }
-                                _ledStateChanged = true;
                             }
                         }
                     }
+                    xSemaphoreGive(_ledStateMutex);
                 }
+                break;
+            }
+            case 16:
+            {
+                FlashingLight_on();
+                break;
+            }
+            case 17:
+            {
+                FlashingLight_off();
                 break;
             }
             case 20: // 车辆通过状态
             {
-                // 保存历史状态
-                _last_color = ledstate.color;
-                _last_frequency = ledstate.frequency;
-                _last_brightness = ledstate.brightness;
+                if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE) 
+                {
+                    // 保存历史状态
+                    _last_color = ledstate.color;
+                    _last_frequency = ledstate.frequency;
+                    _last_brightness = ledstate.brightness;
 
-                // 更新为车辆通过状态
-                ledstate.color = LedColor::RED;
-                ledstate.frequency = 120;
-                ledstate.brightness = 7000;
-                _messageReceiveTime = millis();  // 记录当前时间
-                _ledStateChanged = true;
+                    // 更新为车辆通过状态
+                    ledstate.color = LedColor::RED;
+                    ledstate.frequency = 120;
+                    ledstate.brightness = 7000;
+                    _messageReceiveTime = millis();  // 记录当前时间
+                    _ledStateChanged = true;
+                    xSemaphoreGive(_ledStateMutex);
+                }
                 break;
-            }
         }
-        xSemaphoreGive(_ledStateMutex);
     }   
 }
 void ledAutoShutDownTask(void *pvParameters)
