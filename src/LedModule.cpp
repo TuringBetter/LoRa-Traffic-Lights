@@ -13,7 +13,7 @@ static       bool            _currentState;
 TaskHandle_t LedTestTaskHandle = NULL;
 TaskHandle_t LedTaskHandle     = NULL;
 
-bool                _ledStateChanged{false};
+bool                _ledStateChanged{true};
 SemaphoreHandle_t   _ledStateMutex;
 volatile LedState   ledstate{
                     .color=LedColor::YELLOW,
@@ -21,7 +21,7 @@ volatile LedState   ledstate{
                     .frequency=0};
 
 static void updatePWM();
-static void update();
+void update();
 
 void Led_init()
 {
@@ -211,69 +211,72 @@ void ledTask(void *pvParameters)
     {
         if (xSemaphoreTake(_ledStateMutex, portMAX_DELAY) == pdTRUE)
         {
-            // 检查状态是否发生变化
-            if (ledstate.brightness != last_ledstate.brightness) 
-            {
-                // 亮度变化
-                if ((ledstate.brightness == 0 && last_ledstate.brightness > 0) || 
-                    (ledstate.brightness > 0 && last_ledstate.brightness == 0)) 
+            if (_ledStateChanged == true){      // 检查状态是否发生变化
+                if (ledstate.brightness != last_ledstate.brightness) 
+                {
+                    // 亮度变化
+                    if ((ledstate.brightness == 0 && last_ledstate.brightness > 0) || 
+                        (ledstate.brightness > 0 && last_ledstate.brightness == 0)) 
+                        {
+                        // 开关状态变化
+                        payload = "0x09 0x";
+                        payload += (ledstate.brightness > 0) ? "01" : "00";
+                        sendData(payload);
+                    } 
+                    else 
                     {
-                    // 开关状态变化
-                    payload = "0x09 0x";
-                    payload += (ledstate.brightness > 0) ? "01" : "00";
-                    sendData(payload);
-                } 
-                else 
-                {
-                    // 亮度值变化
-                    payload = "0x0A 0x";
-                    uint8_t high = (ledstate.brightness >> 8) & 0xFF;
-                    uint8_t low = ledstate.brightness & 0xFF;
-                    payload += String(high, HEX);
-                    payload += " 0x";
-                    payload += String(low, HEX);
-                    sendData(payload);
-                }
-            }
-
-            if (ledstate.frequency != last_ledstate.frequency) 
-            {
-                if (ledstate.frequency > 0 && last_ledstate.frequency > 0) 
-                {
-                    // 闪烁频率变化
-                    payload = "0x0B 0x";
-                    switch(ledstate.frequency) {
-                        case 30: payload += "1E"; break;
-                        case 60: payload += "3C"; break;
-                        case 120: payload += "78"; break;
+                        // 亮度值变化
+                        payload = "0x0A 0x";
+                        uint8_t high = (ledstate.brightness >> 8) & 0xFF;
+                        uint8_t low = ledstate.brightness & 0xFF;
+                        payload += String(high, HEX);
+                        payload += " 0x";
+                        payload += String(low, HEX);
+                        sendData(payload);
                     }
-                    sendData(payload);
-                } 
-                else if ((ledstate.frequency == 0 && last_ledstate.frequency > 0) || 
-                          (ledstate.frequency > 0 && last_ledstate.frequency == 0)) 
-                          {
-                    // 常亮/闪烁切换
-                    payload = "0x0D 0x";
-                    payload += (ledstate.frequency == 0) ? "01" : "00";
+                }
+
+                if (ledstate.frequency != last_ledstate.frequency) 
+                {
+                    if (ledstate.frequency > 0 && last_ledstate.frequency > 0) 
+                    {
+                        // 闪烁频率变化
+                        payload = "0x0B 0x";
+                        switch(ledstate.frequency) {
+                            case 30: payload += "1E"; break;
+                            case 60: payload += "3C"; break;
+                            case 120: payload += "78"; break;
+                        }
+                        sendData(payload);
+                    } 
+                    else if ((ledstate.frequency == 0 && last_ledstate.frequency > 0) || 
+                            (ledstate.frequency > 0 && last_ledstate.frequency == 0)) 
+                            {
+                        // 常亮/闪烁切换
+                        payload = "0x0D 0x";
+                        payload += (ledstate.frequency == 0) ? "01" : "00";
+                        sendData(payload);
+                    }
+                }
+
+                if (ledstate.color != last_ledstate.color) 
+                {
+                    // 颜色变化
+                    payload = "0x0C 0x";
+                    payload += (ledstate.color == LedColor::RED) ? "00" : "01";
                     sendData(payload);
                 }
+
+                // 更新上一次状态
+                last_ledstate.color = ledstate.color;
+                last_ledstate.brightness = ledstate.brightness;
+                last_ledstate.frequency = ledstate.frequency;
+
+                //Serial.println("Led Changed");
+                // 更新LED状态
+                setState(ledstate);
+                _ledStateChanged=false;
             }
-
-            if (ledstate.color != last_ledstate.color) 
-            {
-                // 颜色变化
-                payload = "0x0C 0x";
-                payload += (ledstate.color == LedColor::RED) ? "00" : "01";
-                sendData(payload);
-            }
-
-            // 更新上一次状态
-            last_ledstate.color = ledstate.color;
-            last_ledstate.brightness = ledstate.brightness;
-            last_ledstate.frequency = ledstate.frequency;
-
-            // 更新LED状态
-            setState(ledstate);
             xSemaphoreGive(_ledStateMutex);
         }
 
