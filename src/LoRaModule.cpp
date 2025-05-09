@@ -85,7 +85,7 @@ static void receiveData()
 {
     static int parseState = 0;  // 0: 等待rx行, 1: 等待payload行
     static uint8_t currentPort = 0;
-/** */
+/** *
     // 检查是否有待执行的命令
     if (hasScheduledCommand && millis() >= scheduledCommand.executeTime) 
     {
@@ -127,7 +127,7 @@ static void receiveData()
             Serial.println("[LoRa]: "+response);
             /** */
             parseState = 0;
-            /** */
+            /** *
             // 计算延迟执行时间
             uint32_t compensationDelay = SYNC_DELAY_MS - LoRa_Connect_Delay;
             scheduleCommand(currentPort, response, compensationDelay);

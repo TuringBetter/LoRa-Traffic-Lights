@@ -16,9 +16,11 @@ void setup() {
     FlashingLight_init();
     Led_init();
     Button_init();
+/** *
     Laser_I2C_init();
     LaserStart();
     Acc_init();
+/** */
     LoRa_init();
 
 /** */
@@ -33,7 +35,7 @@ void setup() {
         1                 // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
   // 创建激光测距任务
     xTaskCreatePinnedToCore(
         laserTask,           // 任务函数
@@ -44,7 +46,7 @@ void setup() {
         &laserTaskHandle,    // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -53,17 +55,6 @@ void setup() {
         NULL,                // 任务参数
         1,                   // 任务优先级
         &AccTaskHandle,      // 任务句柄
-        1                    // 运行核心 (1 = 核心1)
-    );
-/** *
-  // 创建灯光测试任务
-    xTaskCreatePinnedToCore(
-        ledTestTask,         // 任务函数
-        "LedTestTask",       // 任务名称
-        4096,                // 堆栈大小
-        NULL,                // 任务参数
-        1,                   // 任务优先级
-        &LedTestTaskHandle,  // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
 /** */
@@ -88,7 +79,7 @@ void setup() {
         &loraTestTaskHandle,    // 任务句柄
         1                       // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数
