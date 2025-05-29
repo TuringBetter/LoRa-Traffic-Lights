@@ -348,7 +348,7 @@ void handlePayload(uint8_t port, const String& payload)
                     xSemaphoreGive(_ledStateMutex);
                 }
                 break;
-        }
+            }
     }   
 }
 void ledAutoShutDownTask(void *pvParameters)
