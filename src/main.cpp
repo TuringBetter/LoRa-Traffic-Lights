@@ -1,13 +1,11 @@
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-// #include "LedModule.h"
-// #include "LaserModule_i2c.h"
 // #include "AccelerometerModule.h"
 // #include "ButtonModule.h"
-// #include "LoRaModule.h"
+#include "LoRaModule.h"
 // #include "FlashingLightModule.h"
-// #include "LED_WS2812Module.h"
+#include "LED_WS2812Module.h"
 #include "RadarModule.h"
 // put function declarations here:
 
@@ -15,16 +13,15 @@ void setup() {
     Serial.begin(115200);
     // Serial.println("系统初始化");
 
-    // LED_WS2812_init();
-    // FlashingLight_init();
-    // Led_init();
-    // Button_init();
 /** *
-    Laser_I2C_init();
-    LaserStart();
+    Radar_init();
+    // FlashingLight_init();
+    // Button_init();
     Acc_init();
 /** */
-    // LoRa_init();
+    LED_WS2812_init();
+    LoRa_init();
+/** */
 
 /** *
     // 创建按键检测任务
@@ -38,7 +35,7 @@ void setup() {
         1                 // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
   // 创建雷达检测任务
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
@@ -73,7 +70,7 @@ void setup() {
         1                // 运行核心 (1 = 核心1)
     );
 /** *
-/** *
+/** */
   // 创建LoRa测试任务
     xTaskCreatePinnedToCore(
         loraTestTask,           // 任务函数
@@ -96,7 +93,7 @@ void setup() {
         &latencyTaskHandle,    // 任务句柄
         1                      // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
 
     // 创建LED控制任务
     xTaskCreatePinnedToCore(

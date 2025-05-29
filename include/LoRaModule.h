@@ -18,7 +18,7 @@ extern TaskHandle_t ledAutoShutDownTaskHandle;  // 延迟测量任务句柄
 
 void loraTestTask(void* pvParameters);
 void latencyTask(void* pvParameters);  // 延迟测量任务函数
-void ledAutoShutDownTask(void* pvParameters);
+// void ledAutoShutDownTask(void* pvParameters);
 
 void LoRa_init();
 void sendData(const String& payload);

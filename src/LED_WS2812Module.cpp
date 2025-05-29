@@ -5,9 +5,9 @@ const int DATA_PIN = 5;    // 选择你的GPIO引脚
 
 TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
-LED_Control_t       ledControl;
 SemaphoreHandle_t   ledControlMutex                =         NULL;
 
+static LED_Control_t       ledControl{false,60,255,0xFF0000};
 static Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 static void setColor(uint32_t color);
@@ -20,27 +20,60 @@ void LED_WS2812_init()
     strip.begin();
     // 创建互斥锁
     ledControlMutex = xSemaphoreCreateMutex();
+
+    setColor(COLOR_RED);
+    setBright(255);
 }
 
-bool LED_WS2812_SetState(LED_Control_t newState)
+void LED_WS2812_SetState(const LED_Control_t &newState)
 {
-    if (ledControlMutex == NULL) return false;
-    
     if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
     {
         ledControl = newState;
         xSemaphoreGive(ledControlMutex);
-        return true;
     }
-    return false;
+}
+
+void LED_WS2812_SetColor(uint32_t color)
+{
+    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
+    {
+        ledControl.color = color;
+        xSemaphoreGive(ledControlMutex);
+    }
+}
+
+void LED_WS2812_SetBrightness(uint8_t brightness)
+{
+    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
+    {
+        ledControl.brightness = brightness;
+        xSemaphoreGive(ledControlMutex);
+    }
+}
+
+void LED_WS2812_SetBlink(bool isBlinking)
+{
+    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
+    {
+        ledControl.isBlinking = isBlinking;
+        ledControl.blinkRate = BLINK_RATE_60;
+        xSemaphoreGive(ledControlMutex);
+    }
+}
+
+void LED_WS2812_SetBlinkRate(uint8_t blinkRate)
+{
+    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
+    {
+        ledControl.isBlinking = true;
+        ledControl.blinkRate = blinkRate;
+        xSemaphoreGive(ledControlMutex);
+    }
 }
 
 void LED_WS2812_Task(void *pvParameters)
-{
-    TickType_t lastBlinkTime = 0;
-    // 闪烁状态:true为亮，false为灭
-    bool ledState = true;
-    
+{   
     while(1) 
     {
         update_LED_WS2812();
@@ -53,6 +86,8 @@ static void update_LED_WS2812(void)
     static TickType_t lastBlinkTime = 0;
     // 闪烁状态:true为亮，false为灭
     static bool ledState = true;
+    // 记录上一次的状态
+    static LED_Control_t lastState{false,60,255,0xFF0000};
     LED_Control_t currentState;
     
     // 获取当前状态
@@ -89,9 +124,17 @@ static void update_LED_WS2812(void)
     } 
     else 
     {
-        // 常亮模式
-        setColor(currentState.color);
-        setBright(currentState.brightness);
+        // 常亮模式：只在状态发生变化时更新LED
+        if (currentState.color      != lastState.color 
+        ||  currentState.brightness != lastState.brightness 
+        ||  currentState.isBlinking != lastState.isBlinking
+        ||  currentState.blinkRate  != lastState.blinkRate )
+        {
+            setColor(currentState.color);
+            setBright(currentState.brightness);
+            // 更新上一次的状态
+            lastState = currentState;
+        }
     }
 }
 
