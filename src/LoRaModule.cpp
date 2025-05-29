@@ -36,7 +36,6 @@ static void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_
 static void handlePayload(uint8_t port, const String& payload);
 static uint32_t getLatency();
 
-void sendData(const String &payload);
 
 void LoRa_init()
 {
@@ -335,7 +334,7 @@ void ledAutoShutDownTask(void *pvParameters)
     }
 }
 
-/* 发射数据 */
+/* 发射数据 *
 bool LoRaModule::sendData(const String &sendData) {
     if (sendData.isEmpty()) {
         Serial.println("[Debug Serial]:Data is empty, not sending.");
@@ -361,3 +360,4 @@ bool LoRaModule::sendData(const String &sendData) {
     Serial.println("[Debug Serial]: UART Time Out Error");
     return false; // 发送失败
 }
+/**/
