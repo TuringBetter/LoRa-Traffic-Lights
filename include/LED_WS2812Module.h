@@ -2,9 +2,11 @@
 #include <Adafruit_NeoPixel.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <freertos/semphr.h>
 
 // LED控制结构体
-typedef struct {
+typedef struct 
+{
     bool        isBlinking ;     // 是否闪烁
     uint8_t     blinkRate  ;     // 闪烁频率 (30, 60, 120次/分钟)
     uint8_t     brightness ;     // 亮度 (0-255)
@@ -20,11 +22,17 @@ typedef struct {
 #define BLINK_RATE_60      60
 #define BLINK_RATE_120     120
 
-extern TaskHandle_t LED_WS2812_TaskHandle;
-extern TaskHandle_t LED_StatusChange_TaskHandle;
+extern TaskHandle_t      LED_WS2812_TaskHandle;
+extern TaskHandle_t      LED_StatusChange_TaskHandle;
+extern LED_Control_t     ledControl;
+extern SemaphoreHandle_t ledControlMutex;
+
+// 初始化函数
+void LED_WS2812_init();
+
+// 任务函数
 void LED_WS2812_Task(void *pvParameters);
 void LED_StatusChange_Task(void *pvParameters);
 
-
-extern LED_Control_t ledControl;
-void LED_WS2812_init();
+// 外部接口函数
+bool LED_WS2812_SetState(LED_Control_t newState);
