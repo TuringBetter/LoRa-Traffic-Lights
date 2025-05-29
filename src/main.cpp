@@ -12,7 +12,7 @@
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("系统初始化");
+    // Serial.println("系统初始化");
 
     LED_WS2812_init();
     // FlashingLight_init();
@@ -40,14 +40,15 @@ void setup() {
 /** *
   // 创建激光测距任务
     xTaskCreatePinnedToCore(
-        laserTask,           // 任务函数
-        "LaserTask",         // 任务名称
+        radarTask,           // 任务函数
+        "RadarTask",         // 任务名称
         4096,               // 堆栈大小
         NULL,                // 任务参数
         1,                   // 任务优先级
-        &laserTaskHandle,    // 任务句柄
+        &radarTaskHandle,    // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
+/** *
 /** *
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
@@ -71,6 +72,7 @@ void setup() {
         1                // 运行核心 (1 = 核心1)
     );
 /** *
+/** *
   // 创建LoRa测试任务
     xTaskCreatePinnedToCore(
         loraTestTask,           // 任务函数
@@ -81,6 +83,7 @@ void setup() {
         &loraTestTaskHandle,    // 任务句柄
         1                       // 运行核心 (1 = 核心1)
     );
+/** *
 /** *
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
@@ -120,6 +123,7 @@ void setup() {
   // 删除setup任务，因为不再需要
     vTaskDelete(NULL);
 /** */
+
 }
 
 void loop() {
