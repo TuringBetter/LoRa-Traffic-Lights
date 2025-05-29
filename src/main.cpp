@@ -1,4 +1,5 @@
 #include <Arduino.h>
+<<<<<<< HEAD
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
@@ -28,14 +29,22 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 // LoRaModule lora;
 // Led led;
 Laser laser(Serial1);
+=======
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include "LedModule.h"
+#include "LaserModule_i2c.h"
+#include "AccelerometerModule.h"
+#include "ButtonModule.h"
+#include "LoRaModule.h"
+// put function declarations here:
+>>>>>>> xr-FreeRTOS
 
 void setup() {
-  Serial.begin(115200);
-  Serial1.begin(921600, SERIAL_8N1, 18, 17);
-  laser.begin();
-  laser.sendReadCommand();
-  Serial.println("System initialized");
+    Serial.begin(115200);
+    Serial.println("系统初始化");
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
   // lora.begin(); // 初始化LoRa模块并读取启动信息
   // led.begin(4);
@@ -81,8 +90,28 @@ void setup() {
   Serial.println("from="+String(test.fromAddr));
   Serial.println("rssi="+String(test.rssi)+" snr="+String(test.snr));
   */
+=======
+    Led_init();
+    Button_init();
+    Laser_I2C_init();
+    LaserStart();
+    Acc_init();
+    LoRa_init();
+>>>>>>> xr-FreeRTOS
 
+/** */
+    // 创建按键检测任务
+    xTaskCreatePinnedToCore(
+        buttonTask,        // 任务函数
+        "ButtonTask",      // 任务名称
+        4096,             // 堆栈大小
+        NULL,             // 任务参数
+        1,                // 任务优先级
+        &ButtonTaskHandle,// 任务句柄
+        1                 // 运行核心 (1 = 核心1)
+    );
 
+<<<<<<< HEAD
 =======
     Led_init();
 //    Button_init();
@@ -127,6 +156,9 @@ void setup() {
     );
 
 /** *
+=======
+/** */
+>>>>>>> xr-FreeRTOS
   // 创建激光测距任务
     xTaskCreatePinnedToCore(
         laserTask,           // 任务函数
@@ -137,7 +169,11 @@ void setup() {
         &laserTaskHandle,    // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
+<<<<<<< HEAD
 /** *
+=======
+/** */
+>>>>>>> xr-FreeRTOS
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -196,11 +232,15 @@ void setup() {
   // 删除setup任务，因为不再需要
     vTaskDelete(NULL);
 /** */
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> xr-FreeRTOS
 }
 
 void loop() {
 
+<<<<<<< HEAD
   // **动态显示**
     tft.fillScreen(ST77XX_BLUE);
     delay(500);
@@ -218,23 +258,8 @@ void loop() {
   
   // 添加一个小延时，避免过于频繁的读取
   delay(10);
+=======
+>>>>>>> xr-FreeRTOS
 }
 
 // put function definitions here:
-
-void printEspId()
-{
-    // 读取芯片ID
-  uint64_t chipId = ESP.getEfuseMac(); // 获取芯片 MAC 地址（作为芯片ID）
-  
-  // 将64位整数分成两个32位整数以便打印
-  uint32_t chipId_high = (uint32_t)(chipId >> 32);
-  uint32_t chipId_low = (uint32_t)chipId;
-  
-  // 打印芯片ID（十六进制格式）
-  Serial.printf("ESP32 Chip ID = %08X%08X\n", chipId_high, chipId_low);
-  
-  // 也可以分别打印高32位和低32位
-  Serial.printf("High = 0x%08X\n", chipId_high);
-  Serial.printf("Low = 0x%08X\n", chipId_low);
-}

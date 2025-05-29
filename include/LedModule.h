@@ -1,12 +1,31 @@
 #pragma once
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
-class Led
+enum class LedColor 
 {
-public:
-    void begin(uint8_t pin);
-    void on();
-    void off();
-private:
-    uint8_t _pin;
+    RED,
+    YELLOW
 };
+
+struct LedState
+{
+    LedColor color;
+    uint32_t brightness;
+    uint16_t frequency;
+};
+
+
+extern TaskHandle_t LedTestTaskHandle;
+extern TaskHandle_t LedTaskHandle;
+void ledTestTask(void *pvParameters);
+void ledTask(void* pvParameters);
+
+extern bool                _ledStateChanged;
+extern SemaphoreHandle_t   _ledStateMutex;
+extern volatile LedState             ledstate;
+
+void Led_init();
+void setState(const volatile LedState& ledstate);
+void update();
