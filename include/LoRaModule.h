@@ -22,3 +22,5 @@ void latencyTask(void* pvParameters);  // 延迟测量任务函数
 
 void LoRa_init();
 void sendData(const String& payload);
+
+void LoRa_init_IDF();

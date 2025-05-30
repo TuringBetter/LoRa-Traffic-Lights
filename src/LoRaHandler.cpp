@@ -114,6 +114,7 @@ void portHandler14(const String &payload)
 
 void portHandler15(const String &payload)
 {
+    Serial.println("payload:"+payload);
     static LED_Control_t new_led_control;
     String payloadStr = payload;
     int firstHex = payloadStr.indexOf("0x");

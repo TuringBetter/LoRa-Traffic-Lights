@@ -35,9 +35,10 @@ extern SemaphoreHandle_t    _ledStateMutex;
 /* */
 
 static void receiveData();
+static void receiveData_IDF();
 static void measureLatency();
 static void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms);
-static void handlePayload(uint8_t port, const String& payload);
+// static void handlePayload(uint8_t port, const String& payload);
 static uint32_t getLatency();
 
 static void sendData_Arduino(const String &payload);
@@ -46,13 +47,59 @@ static void sendData_IDF(const String &payload);
 void LoRa_init()
 {
     Serial1.begin(9600, SERIAL_8N1, LoRa_RX, LoRa_TX);
-    sendData("1111");
+    sendData("1");
     delay(2000);
     // 创建延迟测量信号量
     latencySemaphore = xSemaphoreCreateBinary();
 }
 
 void sendData(const String &payload)
+{
+    // sendData_Arduino(payload);
+    sendData_IDF(payload);
+}
+
+void LoRa_init_IDF()
+{
+    // 初始化串口
+    uart_config_t uart_config = {
+        .baud_rate = 9600,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .source_clk = UART_SCLK_APB,
+    };
+    // 初始化UART1
+    uart_param_config(UART_NUM_1, &uart_config);
+    uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
+    uart_set_pin(UART_NUM_1, LoRa_TX, LoRa_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+
+    // Serial.println("send 1");
+    sendData("1");
+    delay(2000);
+    // 创建延迟测量信号量
+    latencySemaphore = xSemaphoreCreateBinary();
+
+}
+
+void sendData_IDF(const String &payload)
+{
+    // 构建AT指令
+    String command = "AT+DTRX=";
+    command += String(0);
+    command += ",";
+    command += String(1);
+    command += ",";
+    command += String(payload.length());
+    command += ",";
+    command += payload;
+    command += "\n";  // 添加换行符
+
+    // 使用ESP-IDF UART API发送数据
+    uart_write_bytes(UART_NUM_1, command.c_str(), command.length());
+}
+
+void sendData_Arduino(const String &payload)
 {
     // 构建AT指令
     String command = "AT+DTRX=";
@@ -84,7 +131,7 @@ uint32_t getLatency()
     }
 }
 
-static void receiveData()
+void receiveData()
 {
     static int parseState = 0;  // 0: 等待rx行, 1: 等待payload行
     static uint8_t currentPort = 0;
@@ -145,6 +192,59 @@ static void receiveData()
     }    
 }
 
+void receiveData_IDF()
+{
+    static int parseState = 0;  // 0: 等待rx行, 1: 等待payload行
+    static uint8_t currentPort = 0;
+    static char rx_buffer[256];
+    int length = 0;
+
+    // 检查UART是否有数据可读
+    ESP_ERROR_CHECK(uart_get_buffered_data_len(UART_NUM_1, (size_t*)&length));
+    
+    if (length > 0) 
+    {
+        // 读取数据
+        length = uart_read_bytes(UART_NUM_1, (uint8_t*)rx_buffer, (length < sizeof(rx_buffer) - 1) ? length : sizeof(rx_buffer) - 1, 0);
+        rx_buffer[length] = '\0';  // 确保字符串结束
+
+        // 按行处理数据
+        char *line = strtok(rx_buffer, "\n");
+        while (line != NULL) 
+        {
+            String response = String(line);
+            response.trim();  // 移除首尾空格
+
+            // 检查是否是rx行
+            if (response.startsWith("rx:")) 
+            {
+                parseState = 1;
+                // 解析port值
+                int portIndex = response.indexOf("port =");
+                if (portIndex >= 0) 
+                {
+                    currentPort = response.substring(portIndex + 6).toInt();
+                }
+            }
+            // 检查是否是payload行（以0x开头）
+            else if (parseState == 1 && response.indexOf("0x") >= 0) 
+            {
+                parseState = 0;
+                handlePayload(currentPort, response);
+                /*  *
+                Serial.print("port   : ");
+                Serial.println(currentPort);
+                Serial.print("payload: ");
+                Serial.println(response);
+                /*  */
+            }
+
+            // 获取下一行
+            line = strtok(NULL, "\n");
+        }
+    }
+}
+
 void measureLatency()
 {
     sendData("06");
@@ -156,7 +256,8 @@ void loraTestTask(void *pvParameters)
 {
     while(true)
     {
-        receiveData();
+        // receiveData();
+        receiveData_IDF();
         vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
     }
 }

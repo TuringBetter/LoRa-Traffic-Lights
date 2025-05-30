@@ -1,13 +1,13 @@
 #include "LED_WS2812Module.h"
 
 const int NUM_LEDS = 576; // LED数量
-const int DATA_PIN = 15;    // 选择你的GPIO引脚
+const int DATA_PIN = 45;    // 选择你的GPIO引脚
 
 TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
 SemaphoreHandle_t   ledControlMutex                =         NULL;
 
-static LED_Control_t       ledControl{false,60,255,COLOR_YELLOW};
+static LED_Control_t       ledControl{false,60,10,COLOR_RED};
 static Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 static void setColor(uint32_t color);
@@ -21,8 +21,8 @@ void LED_WS2812_init()
     // 创建互斥锁
     ledControlMutex = xSemaphoreCreateMutex();
 
-    setColor(COLOR_YELLOW);
-    setBright(255);
+    setColor(COLOR_RED);
+    setBright(10);
 }
 
 void LED_WS2812_GetState(LED_Control_t& curState)
@@ -96,7 +96,7 @@ static void update_LED_WS2812(void)
     // 闪烁状态:true为亮，false为灭
     static bool ledState = true;
     // 记录上一次的状态
-    static LED_Control_t lastState{false,60,255,0xFF0000};
+    static LED_Control_t lastState{false,60,10,COLOR_RED};
     LED_Control_t currentState;
     
     // 获取当前状态
