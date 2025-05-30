@@ -9,12 +9,12 @@ void FlashingLight_init()
 
 void FlashingLight_on()
 {
-    Serial.println("Flashing on...");
+    // Serial.println("Flashing on...");
     digitalWrite(FLASHING_LIGHT_PIN,LOW);
 }
 
 void FlashingLight_off()
 {
-    Serial.println("Flashing off...");
+    // Serial.println("Flashing off...");
     digitalWrite(FLASHING_LIGHT_PIN,HIGH);
 }

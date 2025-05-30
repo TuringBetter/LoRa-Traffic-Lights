@@ -1,7 +1,7 @@
 #include "LED_WS2812Module.h"
 
 const int NUM_LEDS = 576; // LED数量
-const int DATA_PIN = 5;    // 选择你的GPIO引脚
+const int DATA_PIN = 15;    // 选择你的GPIO引脚
 
 TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;

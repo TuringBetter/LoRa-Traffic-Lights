@@ -59,18 +59,6 @@ void setup() {
         1                    // 运行核心 (1 = 核心1)
     );
 /** *
-  // 创建灯光任务
-    xTaskCreatePinnedToCore(
-        ledTask,         // 任务函数
-        "LedTask",       // 任务名称
-        4096,            // 堆栈大小
-        NULL,            // 任务参数
-        1,               // 任务优先级
-        &LedTaskHandle,  // 任务句柄
-        1                // 运行核心 (1 = 核心1)
-    );
-/** *
-/** *
   // 创建LoRa测试任务
     xTaskCreatePinnedToCore(
         loraTestTask,           // 任务函数
@@ -105,18 +93,6 @@ void setup() {
         &LED_WS2812_TaskHandle,   // 任务句柄
         1                         // 运行核心 (1 = 核心1)
     );
-/** *
-    // 创建LED状态改变任务
-    xTaskCreatePinnedToCore(
-        LED_StatusChange_Task,          // 任务函数
-        "LED_StatusChange_Task",        // 任务名称
-        4096,                           // 堆栈大小
-        NULL,                           // 任务参数
-        1,                              // 任务优先级
-        &LED_StatusChange_TaskHandle,   // 任务句柄
-        1                               // 运行核心 (1 = 核心1)
-    );
-
 /** */
   // 删除setup任务，因为不再需要
     vTaskDelete(NULL);

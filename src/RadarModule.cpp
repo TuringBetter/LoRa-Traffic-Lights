@@ -3,7 +3,7 @@
 #include "LED_WS2812Module.h"
 
 // 定义GPIO引脚
-static const int RADAR_GPIO_PIN         = 6     ; // GPIO6引脚
+static const int RADAR_GPIO_PIN         = 16     ; // GPIO16引脚
 static const int LED_GPIO_PIN           = 45    ; // GPIO45引脚
 
 static bool     _vehicleDetected        = false ; // 车辆检测状态
