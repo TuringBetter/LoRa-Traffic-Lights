@@ -3,7 +3,7 @@
 TaskHandle_t WatchdogTaskHandle = NULL;
 
 // 看门狗配置参数
-static const uint32_t WDT_TIMEOUT_SECONDS = 20;    // 看门狗超时时间（秒）
+static const uint32_t WDT_TIMEOUT_SECONDS = 30;    // 看门狗超时时间（秒）
 static const uint32_t FEED_INTERVAL_MS = 2000;    // 喂狗间隔（毫秒）
 
 void Watchdog_init()

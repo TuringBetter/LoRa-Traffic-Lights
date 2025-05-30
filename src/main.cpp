@@ -6,6 +6,7 @@
 #include "ButtonModule.h"
 #include "LoRaModule.h"
 #include "WatchdogModule.h"
+#include "WdtTestModule.h"
 #include "RadarModule.h"
 
 void setup() {
@@ -45,11 +46,11 @@ void setup() {
   Serial.println("from="+String(test.fromAddr));
   Serial.println("rssi="+String(test.rssi)+" snr="+String(test.snr));
   */
-    Led_init();
+//    Led_init();
 //    Button_init();
 //    Acc_init();
 //    LoRa_init();
-    Radar_init();
+//    Radar_init();
 /** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
@@ -63,9 +64,9 @@ void setup() {
     );
 /**/
 
-    /**
+    /**/
     Watchdog_init();  // 初始化看门狗
-
+    subscribeTaskToWatchdog(WdtTestTaskHandle);
     // 创建看门狗任务（优先级设置为最高）
     xTaskCreatePinnedToCore(
         watchdogTask,         // 任务函数
@@ -77,7 +78,7 @@ void setup() {
         1                     // 运行核心 (1 = 核心1)
     );
 
-    /* 创建看门狗测试任务 *
+    /* 创建看门狗测试任务 */
     xTaskCreatePinnedToCore(
         wdtTestTask,          // 任务函数
         "WdtTestTask",        // 任务名称
@@ -88,6 +89,7 @@ void setup() {
         1                     // 运行核心 (1 = 核心1)
     );
 
+    
 /** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
@@ -101,7 +103,7 @@ void setup() {
     );
 
 /** *
-/** */
+/** *
   // 创建激光测距任务
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
@@ -134,7 +136,7 @@ void setup() {
         &LedTestTaskHandle,  // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
   // 创建灯光任务
     xTaskCreatePinnedToCore(
         ledTask,         // 任务函数
