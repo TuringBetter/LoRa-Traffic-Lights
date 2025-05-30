@@ -74,9 +74,9 @@ void LoRa_init_IDF()
     uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
     uart_set_pin(UART_NUM_1, LoRa_TX, LoRa_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
-    // Serial.println("send 1");
     sendData("1");
     delay(2000);
+    Serial.println("send 1");
     // 创建延迟测量信号量
     latencySemaphore = xSemaphoreCreateBinary();
 
@@ -196,7 +196,9 @@ void receiveData_IDF()
 {
     static int parseState = 0;  // 0: 等待rx行, 1: 等待payload行
     static uint8_t currentPort = 0;
-    static char rx_buffer[256];
+    static char line_buffer[512];  // 用于存储未处理完的数据
+    static int line_len = 0;       // 当前line_buffer中的数据长度
+    char rx_buffer[256];          // 临时接收缓冲区
     int length = 0;
 
     // 检查UART是否有数据可读
@@ -208,39 +210,52 @@ void receiveData_IDF()
         length = uart_read_bytes(UART_NUM_1, (uint8_t*)rx_buffer, (length < sizeof(rx_buffer) - 1) ? length : sizeof(rx_buffer) - 1, 0);
         rx_buffer[length] = '\0';  // 确保字符串结束
 
-        // 按行处理数据
-        char *line = strtok(rx_buffer, "\n");
-        while (line != NULL) 
+        // 处理接收到的数据
+        for (int i = 0; i < length; ++i) 
         {
-            String response = String(line);
-            response.trim();  // 移除首尾空格
-
-            // 检查是否是rx行
-            if (response.startsWith("rx:")) 
+            if (rx_buffer[i] == '\n') 
             {
-                parseState = 1;
-                // 解析port值
-                int portIndex = response.indexOf("port =");
-                if (portIndex >= 0) 
+                // 找到完整的一行，处理它
+                line_buffer[line_len] = '\0';  // 确保字符串结束
+                String response = String(line_buffer);
+                response.trim();  // 移除首尾空格
+
+                // 检查是否是rx行
+                if (response.startsWith("rx:")) 
                 {
-                    currentPort = response.substring(portIndex + 6).toInt();
+                    parseState = 1;
+                    // 解析port值
+                    int portIndex = response.indexOf("port =");
+                    if (portIndex >= 0) 
+                    {
+                        currentPort = response.substring(portIndex + 6).toInt();
+                    }
+
+                }
+                // 检查是否是payload行（以0x开头）
+                else if (parseState == 1 && response.indexOf("0x") >= 0) 
+                {
+                    parseState = 0;
+                    /**
+                    Serial.print("port   : ");
+                    Serial.println(currentPort);
+                    Serial.print("payload: ");
+                    Serial.println(response);
+                    /**/
+                    handlePayload(currentPort, response);
+                }
+
+                // 重置line_buffer
+                line_len = 0;
+            } 
+            else 
+            {
+                // 将字符添加到line_buffer
+                if (line_len < sizeof(line_buffer) - 1) 
+                {
+                    line_buffer[line_len++] = rx_buffer[i];
                 }
             }
-            // 检查是否是payload行（以0x开头）
-            else if (parseState == 1 && response.indexOf("0x") >= 0) 
-            {
-                parseState = 0;
-                handlePayload(currentPort, response);
-                /*  *
-                Serial.print("port   : ");
-                Serial.println(currentPort);
-                Serial.print("payload: ");
-                Serial.println(response);
-                /*  */
-            }
-
-            // 获取下一行
-            line = strtok(NULL, "\n");
         }
     }
 }
