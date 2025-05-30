@@ -39,3 +39,4 @@ void LED_WS2812_SetColor(uint32_t color);
 void LED_WS2812_SetBrightness(uint8_t brightness);
 void LED_WS2812_SetBlink(bool isBlinking);
 void LED_WS2812_SetBlinkRate(uint8_t blinkRate);
+void LED_WS2812_GetState(LED_Control_t& curState);  // 获取当前LED状态

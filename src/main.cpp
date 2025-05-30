@@ -14,13 +14,13 @@ void setup() {
     // Serial.println("系统初始化");
 
 /** *
-    Radar_init();
     // FlashingLight_init();
     // Button_init();
+    LoRa_init();
     Acc_init();
 /** */
     LED_WS2812_init();
-    LoRa_init();
+    Radar_init();
 /** */
 
 /** *
@@ -35,7 +35,7 @@ void setup() {
         1                 // 运行核心 (1 = 核心1)
     );
 
-/** *
+/** */
   // 创建雷达检测任务
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
@@ -70,7 +70,7 @@ void setup() {
         1                // 运行核心 (1 = 核心1)
     );
 /** *
-/** */
+/** *
   // 创建LoRa测试任务
     xTaskCreatePinnedToCore(
         loraTestTask,           // 任务函数
