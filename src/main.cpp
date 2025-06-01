@@ -1,13 +1,14 @@
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "LedModule.h"
-#include "AccelerometerModule.h"
-#include "ButtonModule.h"
-#include "LoRaModule.h"
+//#include "LedModule.h"
+//#include "AccelerometerModule.h"
+//#include "ButtonModule.h"
+//#include "LoRaModule.h"
 #include "WatchdogModule.h"
 #include "WdtTestModule.h"
-#include "RadarModule.h"
+//#include "RadarModule.h"
+#include "LedTest.h"
 
 void setup() {
     Serial.begin(115200);
@@ -66,7 +67,7 @@ void setup() {
 
     /**/
     Watchdog_init();  // 初始化看门狗
-    subscribeTaskToWatchdog(WdtTestTaskHandle);
+    //LedTest_init();
     // 创建看门狗任务（优先级设置为最高）
     xTaskCreatePinnedToCore(
         watchdogTask,         // 任务函数
@@ -89,7 +90,15 @@ void setup() {
         1                     // 运行核心 (1 = 核心1)
     );
 
-    
+    xTaskCreatePinnedToCore(
+        LedTest_task,
+        "LedTestTask",
+        4096,
+        NULL,
+        1,
+        &LedTestTaskHandle,
+        1
+    );
 /** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
@@ -171,6 +180,8 @@ void setup() {
         1                      // 运行核心 (1 = 核心1)
     );
 /** */
+    subscribeTaskToWatchdog(WdtTestTaskHandle);
+    subscribeTaskToWatchdog(LedTestTaskHandle);
   // 删除setup任务，因为不再需要
     vTaskDelete(NULL);
 /** */
