@@ -51,6 +51,7 @@ static void processRadarData() {
     {
         if (!_vehicleDetected) 
         {
+            // Serial.println("vehicle detected...");
             _vehicleDetected = true; // 标记为检测到车辆
             waitingForDelay = false;
             LED_WS2812_GetState(last_state);
@@ -61,6 +62,7 @@ static void processRadarData() {
     {
         if (_vehicleDetected) 
         {
+            // Serial.println("vehicle left...");
             _vehicleDetected = false; // 标记车辆已经离开
             vehicleLeaveTime = xTaskGetTickCount();
             waitingForDelay = true;

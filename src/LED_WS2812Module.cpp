@@ -7,7 +7,7 @@ TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
 SemaphoreHandle_t   ledControlMutex                =         NULL;
 
-static LED_Control_t       ledControl{false,60,10,COLOR_RED};
+static LED_Control_t       ledControl{false,60,10,COLOR_YELLOW};
 static Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 static void setColor(uint32_t color);
@@ -21,7 +21,7 @@ void LED_WS2812_init()
     // 创建互斥锁
     ledControlMutex = xSemaphoreCreateMutex();
 
-    setColor(COLOR_RED);
+    setColor(COLOR_YELLOW);
     setBright(10);
 }
 

@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-// #include "AccelerometerModule.h"
-// #include "ButtonModule.h"
+#include "AccelerometerModule.h"
+#include "ButtonModule.h"
 #include "LoRaModule.h"
 // #include "FlashingLightModule.h"
 #include "LED_WS2812Module.h"
@@ -15,15 +15,15 @@ void setup() {
 
 /** *
     // FlashingLight_init();
-    // Button_init();
-    Acc_init();
 /** *
-    Radar_init();
 /** */
-    LED_WS2812_init();
     LoRa_init_IDF();
+    Button_init();
+    Acc_init();
+    Radar_init();
+    LED_WS2812_init();
 
-/** *
+/** */
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
         buttonTask,        // 任务函数
@@ -35,7 +35,7 @@ void setup() {
         1                 // 运行核心 (1 = 核心1)
     );
 
-/** *
+/** */
   // 创建雷达检测任务
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
@@ -47,7 +47,7 @@ void setup() {
         1                    // 运行核心 (1 = 核心1)
     );
 
-/** *
+/** */
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
