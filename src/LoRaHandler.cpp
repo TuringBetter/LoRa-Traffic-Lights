@@ -10,9 +10,6 @@ static void portHandler12(const String& payload);
 static void portHandler13(const String& payload);
 static void portHandler14(const String& payload);
 static void portHandler15(const String& payload);
-static void portHandler16(const String& payload);
-static void portHandler17(const String& payload);
-static void portHandler20(const String& payload);
 
 static const portHandler portHandlers[] = 
 {
@@ -32,11 +29,6 @@ static const portHandler portHandlers[] =
     portHandler13,       // 13
     portHandler14,       // 14
     portHandler15,       // 15
-    portHandler16,       // 16
-    portHandler17,       // 17
-    NULL,                // 18
-    NULL,                // 19
-    portHandler20,       // 20
 };
 
 
@@ -128,69 +120,37 @@ void portHandler14(const String &payload)
 
 void portHandler15(const String &payload)
 {
-    // Serial.println("payload:"+payload);
     static LED_Control_t new_led_control;
     String payloadStr = payload;
+    
+    // 解析颜色（第1字节）
     int firstHex = payloadStr.indexOf("0x");
-    if (firstHex >= 0) 
+    uint8_t color = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
+    new_led_control.color = (color == 0x00) ? COLOR_RED : COLOR_YELLOW;
+
+    // 解析频率（第2字节）
+    int secondHex = payloadStr.indexOf("0x", firstHex + 4);
+    uint8_t freq = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
+    switch(freq) 
     {
-         // 解析颜色（第1字节）
-        uint8_t color = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
-        new_led_control.color = (color == 0x00) ? COLOR_RED: COLOR_YELLOW;
-        // 解析频率（第2字节）
-        int secondHex = payloadStr.indexOf("0x", firstHex + 4);
-        if (secondHex >= 0) 
-        {
-            uint8_t freq = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
-            switch(freq) 
-            {
-                case 0x1E: new_led_control.blinkRate = BLINK_RATE_30; break;
-                case 0x3C: new_led_control.blinkRate = BLINK_RATE_60; break;
-                case 0x78: new_led_control.blinkRate = BLINK_RATE_120; break;
-            }
-
-            // 解析亮度（第3-4字节）
-            int thirdHex = payloadStr.indexOf("0x", secondHex + 4);
-            int fourthHex = payloadStr.indexOf("0x", thirdHex + 4);
-            if (thirdHex >= 0 && fourthHex >= 0) 
-            {
-                uint8_t high = strtol(payloadStr.substring(thirdHex, thirdHex + 4).c_str(), NULL, 16);
-                uint8_t low = strtol(payloadStr.substring(fourthHex, fourthHex + 4).c_str(), NULL, 16);
-                uint16_t brightness = (high << 8) | low;
-                // 将0~7000的亮度值映射到0~255
-                uint8_t led_brightness = (uint8_t)((brightness * 255) / 7000);
-                new_led_control.brightness=led_brightness;
-                // 解析亮灯方式（第5字节）
-                int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
-                if (fifthHex >= 0) 
-                {
-                    uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
-                    if (manner == 0x00) 
-                    { // 闪烁
-                        // 保持之前设置的频率
-                        new_led_control.isBlinking=true;
-                    } 
-                    else if (manner == 0x01) 
-                    { // 常亮
-                        new_led_control.isBlinking=false;
-                    }
-                }
-            }    
-        }
+        case 0x1E: new_led_control.blinkRate = BLINK_RATE_30; break;
+        case 0x3C: new_led_control.blinkRate = BLINK_RATE_60; break;
+        case 0x78: new_led_control.blinkRate = BLINK_RATE_120; break;
     }
+
+    // 解析亮度（第3-4字节）
+    int thirdHex = payloadStr.indexOf("0x", secondHex + 4);
+    int fourthHex = payloadStr.indexOf("0x", thirdHex + 4);
+    uint8_t high = strtol(payloadStr.substring(thirdHex, thirdHex + 4).c_str(), NULL, 16);
+    uint8_t low = strtol(payloadStr.substring(fourthHex, fourthHex + 4).c_str(), NULL, 16);
+    uint16_t brightness = (high << 8) | low;
+    // 将0~7000的亮度值映射到0~255
+    new_led_control.brightness = (uint8_t)((brightness * 255) / 7000);
+
+    // 解析亮灯方式（第5字节）
+    int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
+    uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
+    new_led_control.isBlinking = (manner == 0x00);  // 0x00闪烁，0x01常亮
+
     LED_WS2812_SetState(new_led_control);
-}
-
-void portHandler16(const String &payload)
-{
-    FlashingLight_on();
-}
-
-void portHandler17(const String &payload)
-{
-    FlashingLight_off();
-}
-
-void portHandler20(const String &payload)
-{
 }

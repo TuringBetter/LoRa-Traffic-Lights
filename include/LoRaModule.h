@@ -12,13 +12,13 @@ struct ScheduledCommand
 };
 
 
-extern TaskHandle_t loraTestTaskHandle;
+extern TaskHandle_t loraReceiveTaskHandle;
 extern TaskHandle_t latencyTaskHandle;  // 延迟测量任务句柄
-extern TaskHandle_t ledAutoShutDownTaskHandle;  // 延迟测量任务句柄
+extern TaskHandle_t heartBeatTaskHandle;  // 延迟测量任务句柄
 
-void loraTestTask(void* pvParameters);
+void loraReceiveTask(void* pvParameters);
 void latencyTask(void* pvParameters);  // 延迟测量任务函数
-// void ledAutoShutDownTask(void* pvParameters);
+void heartBeatTask(void* pvParameters);  // 延迟测量任务函数
 
 void LoRa_init();
 void sendData(const String& payload);

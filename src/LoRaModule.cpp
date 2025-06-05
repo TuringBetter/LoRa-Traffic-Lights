@@ -13,22 +13,22 @@ static unsigned long _messageReceiveTime = 0;  // 记录车辆通过的时间
 /* */
 
 
-static uint32_t LoRa_Connect_Delay = 800;    // 通信延迟时间
-static uint32_t LoRa_Send_TIME = 0;        // 发送时间
-static uint32_t LoRa_Recv_TIME = 0;        // 接收时间
-static bool     waitingForResponse=false;
+static uint32_t LoRa_Connect_Delay          = 800   ;    // 通信延迟时间
+static uint32_t LoRa_Send_TIME              = 0     ;        // 发送时间
+static uint32_t LoRa_Recv_TIME              = 0     ;        // 接收时间
+static bool     waitingForResponse          = false ;
 
-static const uint32_t SYNC_DELAY_MS = 1000;  // 同步延迟时间（1秒）
+static const uint32_t SYNC_DELAY_MS         = 1000  ;  // 同步延迟时间（1秒）
 /* *
 static ScheduledCommand scheduledCommand;  // 存储待执行的命令
 static bool hasScheduledCommand = false;   // 是否有待执行的命
 /* */
 
 // 外部使用的变量
-SemaphoreHandle_t latencySemaphore;  // 延迟测量完成信号量
-TaskHandle_t loraTestTaskHandle  = NULL;
-TaskHandle_t latencyTaskHandle   = NULL;  // 延迟测量任务句柄
-
+SemaphoreHandle_t   latencySemaphore                 ;  // 延迟测量完成信号量  
+TaskHandle_t        loraReceiveTaskHandle      = NULL;
+TaskHandle_t        latencyTaskHandle          = NULL;  // 延迟测量任务句柄
+TaskHandle_t        heartBeatTaskHandle        = NULL;  // 延迟测量任务句柄
 /* *
 // 声明外部变量
 extern volatile LedState              ledstate;
@@ -40,8 +40,7 @@ static void receiveData_Test();
 static void receiveData();
 static void receiveData_IDF();
 static void measureLatency();
-static void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms);
-// static void handlePayload(uint8_t port, const String& payload);
+// static void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms);
 static uint32_t getLatency();
 
 static void sendData_Arduino(const String &payload);
@@ -270,7 +269,7 @@ void measureLatency()
     waitingForResponse = true;
 }
 
-void loraTestTask(void *pvParameters)
+void loraReceiveTask(void *pvParameters)
 {
     while(true)
     {
@@ -302,6 +301,18 @@ void latencyTask(void *pvParameters)
         // 任务延时
         vTaskDelay(xDelay);
     }    
+}
+void heartBeatTask(void *pvParameters)
+{
+    // const TickType_t baseDelay = pdMS_TO_TICKS(30*60*1000);  // 基础延时时间
+    const TickType_t baseDelay = pdMS_TO_TICKS(1*2*1000);  // 基础延时时间
+    while(true)
+    {
+        sendData("09");
+        // 生成随机延时时间，范围为基础延时时间的5%
+        TickType_t randomDelay = baseDelay + pdMS_TO_TICKS((rand() % 101) - 50); // 生成-5%到5%的随机延时
+        vTaskDelay(randomDelay);
+    }
 }
 /**
 void scheduleCommand(uint8_t port, const String &payload, uint32_t delay_ms)

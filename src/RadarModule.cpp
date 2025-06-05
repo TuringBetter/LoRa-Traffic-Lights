@@ -40,7 +40,7 @@ static void processRadarData() {
     
     static const LED_Control_t RED_ON_STATE
     {
-        .isBlinking     = false,
+        .isBlinking     = true,
         .blinkRate      = BLINK_RATE_60,
         .brightness     = 255,
         .color          = COLOR_RED

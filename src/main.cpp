@@ -59,14 +59,26 @@ void setup() {
         1                    // 运行核心 (1 = 核心1)
     );
 /** */
-  // 创建LoRa测试任务
+  // 创建LoRa任务
     xTaskCreatePinnedToCore(
-        loraTestTask,           // 任务函数
-        "LoraTestTask",         // 任务名称
+        loraReceiveTask,           // 任务函数
+        "LoraReceiveTask",         // 任务名称
         4096,                   // 堆栈大小
         NULL,                   // 任务参数
         1,                      // 任务优先级
-        &loraTestTaskHandle,    // 任务句柄
+        &loraReceiveTaskHandle,    // 任务句柄
+        1                       // 运行核心 (1 = 核心1)
+    );
+
+/** */
+    // 创建心跳任务
+    xTaskCreatePinnedToCore(
+        heartBeatTask,           // 任务函数
+        "HeartBeatTask",         // 任务名称
+        4096,                   // 堆栈大小
+        NULL,                   // 任务参数
+        1,                      // 任务优先级
+        &heartBeatTaskHandle,    // 任务句柄
         1                       // 运行核心 (1 = 核心1)
     );
 /** *
