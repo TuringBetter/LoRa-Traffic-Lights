@@ -19,8 +19,10 @@ static uint32_t LoRa_Recv_TIME = 0;        // 接收时间
 static bool     waitingForResponse=false;
 
 static const uint32_t SYNC_DELAY_MS = 1000;  // 同步延迟时间（1秒）
+/* *
 static ScheduledCommand scheduledCommand;  // 存储待执行的命令
 static bool hasScheduledCommand = false;   // 是否有待执行的命
+/* */
 
 // 外部使用的变量
 SemaphoreHandle_t latencySemaphore;  // 延迟测量完成信号量
@@ -301,6 +303,7 @@ void latencyTask(void *pvParameters)
         vTaskDelay(xDelay);
     }    
 }
+/**
 void scheduleCommand(uint8_t port, const String &payload, uint32_t delay_ms)
 {
     scheduledCommand.port = port;
@@ -308,6 +311,7 @@ void scheduleCommand(uint8_t port, const String &payload, uint32_t delay_ms)
     scheduledCommand.executeTime = millis() + delay_ms;
     hasScheduledCommand = true;
 }
+/**/
 
 void receiveData_Test()
 {

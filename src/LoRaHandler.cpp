@@ -109,7 +109,21 @@ void portHandler13(const String &payload)
 
 void portHandler14(const String &payload)
 {
-
+    /** */
+    const static LED_Control_t LED_OFF = {false, 60, 0, COLOR_OFF};
+    const static LED_Control_t LED_ON  = {false, 30, 10, COLOR_YELLOW};
+    uint8_t status = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
+    // 开启
+    if(status == 0x01)
+    {
+        LED_WS2812_SetState(LED_ON);
+    }     
+    // 关闭
+    else
+    {
+        LED_WS2812_SetState(LED_OFF);
+    }
+    /* */
 }
 
 void portHandler15(const String &payload)

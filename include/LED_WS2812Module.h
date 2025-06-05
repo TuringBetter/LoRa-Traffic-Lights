@@ -16,6 +16,7 @@ typedef struct
 // 颜色定义
 #define COLOR_RED       0xFF0000
 #define COLOR_YELLOW    0xFFFF00
+#define COLOR_OFF       0x000000
 
 // 闪烁频率定义
 #define BLINK_RATE_30      30

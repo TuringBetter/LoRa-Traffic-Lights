@@ -7,7 +7,7 @@ TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
 SemaphoreHandle_t   ledControlMutex                =         NULL;
 
-static LED_Control_t       ledControl{false,60,10,COLOR_YELLOW};
+static LED_Control_t       ledControl{false,30,10,COLOR_YELLOW};
 static Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 static void setColor(uint32_t color);
@@ -134,16 +134,20 @@ static void update_LED_WS2812(void)
     else 
     {
         // 常亮模式：只在状态发生变化时更新LED
+        /** *
         if (currentState.color      != lastState.color 
         ||  currentState.brightness != lastState.brightness 
         ||  currentState.isBlinking != lastState.isBlinking
         ||  currentState.blinkRate  != lastState.blinkRate )
         {
+        /**  */
             setColor(currentState.color);
             setBright(currentState.brightness);
+        /* *
             // 更新上一次的状态
             lastState = currentState;
         }
+        /* */
     }
 }
 
