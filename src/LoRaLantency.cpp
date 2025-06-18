@@ -14,7 +14,7 @@ static void measureLatency();
 
 void latencyTask(void *pvParameters)
 {
-    const TickType_t xDelay = pdMS_TO_TICKS(1*10*1000);  // 每10min测量一次延迟
+    const TickType_t xDelay = pdMS_TO_TICKS(1*60*1000);  // 每10min测量一次延迟
     // const TickType_t xDelay = pdMS_TO_TICKS(1*2*1000);  // 每10min测量一次延迟
     
     while(true) {
@@ -55,7 +55,7 @@ void CalcLantency()
 
 void measureLatency()
 {
-    Serial.println("send measure lantency instruction");
+    // Serial.println("send measure lantency instruction");
     sendData("06");
     SEND_TIME = millis();
 }

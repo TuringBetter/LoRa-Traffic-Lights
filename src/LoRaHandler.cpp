@@ -44,7 +44,7 @@ void handlePayload(uint8_t port, const String& payload)
 
 void measureLantency(const String &payload)
 {
-    Serial.println("recieve lantency response.");
+    // Serial.println("recieve lantency response.");
     CalcLantency();
 }
 
@@ -158,6 +158,8 @@ void setAll(const String &payload)
     int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
     uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
     new_led_control.isBlinking = (manner == 0x00);  // 0x00闪烁，0x01常亮
+
+    if(manner == 0x00) delay(getDelay());
 
     LED_WS2812_SetState(new_led_control);
 }
