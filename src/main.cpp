@@ -7,6 +7,7 @@
 // #include "FlashingLightModule.h"
 #include "LED_WS2812Module.h"
 #include "RadarModule.h"
+#include "LoRaLantency.h"
 // put function declarations here:
 
 void setup() {
@@ -18,12 +19,12 @@ void setup() {
 /** *
 /** */
     LoRa_init_IDF();
-    Button_init();
-    Acc_init();
-    Radar_init();
+    // Button_init();
+    // Acc_init();
+    // Radar_init();
     LED_WS2812_init();
 
-/** */
+/** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
         buttonTask,        // 任务函数
@@ -35,7 +36,7 @@ void setup() {
         1                 // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
   // 创建雷达检测任务
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
@@ -47,7 +48,7 @@ void setup() {
         1                    // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -70,7 +71,7 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
     // 创建心跳任务
     xTaskCreatePinnedToCore(
         heartBeatTask,           // 任务函数
@@ -82,7 +83,7 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 /** *
-/** *
+/** */
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数
