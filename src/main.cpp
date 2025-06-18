@@ -83,7 +83,7 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 /** *
-/** */
+/** *
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数

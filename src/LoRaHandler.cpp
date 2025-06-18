@@ -54,7 +54,7 @@ void measureLantency(const String &payload)
 
 void setFreq(const String &payload)
 {
-    delay(getDelay());
+    // delay(getDelay());
     uint8_t payload_freq = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
     switch(payload_freq) 
     {
@@ -163,7 +163,7 @@ void setAll(const String &payload)
     uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
     new_led_control.isBlinking = (manner == 0x00);  // 0x00闪烁，0x01常亮
 
-    if(manner == 0x00) delay(getDelay());
+    // if(manner == 0x00) delay(getDelay());
 
     LED_WS2812_SetState(new_led_control);
 }
