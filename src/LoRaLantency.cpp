@@ -2,7 +2,7 @@
 #include "LoRaModule.h"
 
 TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
-static const uint32_t   SYNC_LANTENCY         = 1000 ;  // 同步延迟时间（1秒）
+// static const uint32_t   SYNC_LANTENCY         = 1000 ;  // 同步延迟时间（1秒）
 
 
 static uint32_t LENTENCY               = 800   ;    // 通信延迟时间
@@ -35,11 +35,14 @@ void latencyTask(void *pvParameters)
     }    
 }
 
-
 uint32_t getDelay()
 {
-    return SYNC_LANTENCY - LENTENCY;
+    if (LENTENCY == 0) return 0;  // 或者按需求决定怎么处理 0
+
+    uint32_t upperBound = ((LENTENCY - 1) / 2000 + 1) * 2000;
+    return upperBound - LENTENCY;
 }
+
 
 void CalcLantency()
 {
