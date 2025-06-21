@@ -115,7 +115,11 @@ static void update_LED_WS2812(void)
     
     // 检查是否从非闪烁状态切换到闪烁模式
     // 这个条件确保同步逻辑只在状态"转换"时执行一次，不影响后续循环闪烁的性能。
-    if (!lastState.isBlinking && currentState.isBlinking) 
+    if ((!lastState.isBlinking && currentState.isBlinking) || // 从不闪烁到闪烁
+    (currentState.isBlinking && // 已经在闪烁模式下
+     (lastState.blinkRate != currentState.blinkRate ||
+      lastState.color != currentState.color ||
+      lastState.brightness != currentState.brightness))) // 闪烁参数变化
     {
         /*
         // 刚刚从不闪烁切换到闪烁模式，执行时间同步逻辑
@@ -323,7 +327,8 @@ void LED_Test_Task(void *pvParameters)
         Serial.print("[LED Test] State: ");
         Serial.print(state == 0 ? "Blinking" : "Steady");
         Serial.print(", SubState: ");
-        Serial.print(subState == 0 ? "0-15s" : "15-30s");
+        Serial.print((uint64_t)xTaskGetTickCount() * portTICK_PERIOD_MS);
+        Serial.print("ms");
         Serial.print(", Color: ");
         Serial.print(newState.color == COLOR_RED ? "Red" : "Yellow");
         Serial.print(", Brightness: ");
