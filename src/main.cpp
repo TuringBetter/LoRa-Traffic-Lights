@@ -1,24 +1,27 @@
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "AccelerometerModule.h"
-#include "ButtonModule.h"
-#include "LoRaModule.h"
+// #include "AccelerometerModule.h"
+// #include "ButtonModule.h"
+// #include "LoRaModule.h"
 // #include "FlashingLightModule.h"
 #include "LED_WS2812Module.h"
-#include "RadarModule.h"
-#include "LoRaLantency.h"
-// put function declarations here:
+// #include "RadarModule.h"
+//#include "LoRaLantency.h"
+
+// 测试任务句柄声明
+TaskHandle_t LED_Test_TaskHandle = NULL;
+
 
 void setup() {
     Serial.begin(115200);
-    // Serial.println("系统初始化");
+    Serial.println("系统初始化");
 
 /** *
     // FlashingLight_init();
 /** *
 /** */
-    LoRa_init_IDF();
+    //LoRa_init_IDF();
     // Button_init();
     // Acc_init();
     // Radar_init();
@@ -59,7 +62,7 @@ void setup() {
         &AccTaskHandle,      // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
   // 创建LoRa任务
     xTaskCreatePinnedToCore(
         loraReceiveTask,           // 任务函数
@@ -104,6 +107,17 @@ void setup() {
         NULL,                     // 任务参数
         1,                        // 任务优先级
         &LED_WS2812_TaskHandle,   // 任务句柄
+        1                         // 运行核心 (1 = 核心1)
+    );
+
+    // 创建LED测试任务
+    xTaskCreatePinnedToCore(
+        LED_Test_Task,            // 任务函数
+        "LED_Test_Task",          // 任务名称
+        4096,                     // 堆栈大小
+        NULL,                     // 任务参数
+        1,                        // 任务优先级
+        &LED_Test_TaskHandle,     // 任务句柄
         1                         // 运行核心 (1 = 核心1)
     );
 /** */
