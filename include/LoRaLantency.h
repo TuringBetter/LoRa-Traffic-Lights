@@ -11,3 +11,5 @@ void latencyTask(void* pvParameters);  // 延迟测量任务函数
 uint32_t getDelay();
 
 void CalcLantency();
+
+uint32_t getLantency();

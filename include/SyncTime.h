@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <esp_timer.h>
 
+
 // 时间结构体，用于getTime()的直观可视化输出
 typedef struct {
     uint8_t  hours;
@@ -16,13 +17,13 @@ typedef struct {
 SyncTime_Visual_t getTime();
 
 //获取当前秒数，以秒为单位（向下取整）
-uint64_t getTime_s();
+uint32_t getTime_s();
 
 //获取当前毫秒数，以毫秒为单位（向下取整）。
-uint64_t getTime_ms();
+uint32_t getTime_ms();
 
 //获取当前微秒数，以微秒为单位（向下取整）。
-uint64_t getTime_us();
+//uint64_t getTime_us();
 
 //测试函数
 void SyncTime_Test_Task(void *pvParameters);

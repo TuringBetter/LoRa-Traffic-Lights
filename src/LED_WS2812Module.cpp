@@ -138,15 +138,15 @@ static void update_LED_WS2812(void)
     {
 
 
-        uint64_t current_time_ms = getTime_ms(); 
+        uint32_t current_time_ms = getTime_ms(); 
         //如果要切换为gettime()修改这里为uint64_t current_time_ms = gettime_ms();
-        uint64_t current_seconds = getTime_s();
+        uint32_t current_seconds = getTime_s();
 
         /*
         // 2. 计算下一个偶数秒的毫秒时间作为闪烁的起始同步点。
         // 这样可以确保无论何时启动闪烁，第一次动作都会对齐到最近的未来偶数整秒。
         */
-        uint64_t next_even_second_ms;
+        uint32_t next_even_second_ms;
         if (current_seconds % 2 == 0) 
         {
             // 当前秒是偶数，下一个偶数秒是当前秒 + 2秒

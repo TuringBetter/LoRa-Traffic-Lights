@@ -22,11 +22,11 @@ void setup() {
     // FlashingLight_init();
 /** *
 /** */
-    //LoRa_init_IDF();
+    LoRa_init_IDF();
     // Button_init();
     // Acc_init();
     // Radar_init();
-    // LED_WS2812_init();
+     LED_WS2812_init();
 
 /** *
     // 创建按键检测任务
@@ -63,7 +63,7 @@ void setup() {
         &AccTaskHandle,      // 任务句柄
         1                    // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
   // 创建LoRa任务
     xTaskCreatePinnedToCore(
         loraReceiveTask,           // 任务函数

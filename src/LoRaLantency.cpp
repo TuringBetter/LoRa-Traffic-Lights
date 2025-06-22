@@ -55,6 +55,10 @@ void CalcLantency()
     */
 }
 
+uint32_t getLantency(){
+    return LENTENCY;
+}
+
 void measureLatency()
 {
     // Serial.println("send measure lantency instruction");
