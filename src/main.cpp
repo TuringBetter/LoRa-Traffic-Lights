@@ -3,11 +3,11 @@
 #include <freertos/task.h>
 // #include "AccelerometerModule.h"
 // #include "ButtonModule.h"
-// #include "LoRaModule.h"
+#include "LoRaModule.h"
 // #include "FlashingLightModule.h"
 #include "LED_WS2812Module.h"
 // #include "RadarModule.h"
-//#include "LoRaLantency.h"
+#include "LoRaLantency.h"
 #include "SyncTime.h"
 
 // 测试任务句柄声明
@@ -26,7 +26,7 @@ void setup() {
     // Button_init();
     // Acc_init();
     // Radar_init();
-    LED_WS2812_init();
+    // LED_WS2812_init();
 
 /** *
     // 创建按键检测任务
@@ -87,7 +87,7 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 /** *
-/** *
+/** */
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数

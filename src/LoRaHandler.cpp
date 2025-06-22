@@ -15,7 +15,7 @@ static void setAll(const String& payload);
 static const portHandler portHandlers[] = 
 {
     NULL,                // 0
-    measureLantency,     // 1
+    NULL,                // 1
     NULL,                // 2
     NULL,                // 3
     NULL,                // 4
@@ -23,7 +23,7 @@ static const portHandler portHandlers[] =
     NULL,                // 6
     NULL,                // 7
     NULL,                // 8
-    NULL,                // 9
+    measureLantency,     // 9
     setFreq,             // 10
     setColor,            // 11
     setManner,           // 12
@@ -40,15 +40,44 @@ void handlePayload(uint8_t port, const String& payload)
     portHandler cur_port_handler = portHandlers[port];
     if(cur_port_handler!=NULL)
     {
+        /*
         Serial.print("port: ");
         Serial.println(port);
+        Serial.print("payload: ");
+        Serial.println(payload);
+        */
         cur_port_handler(payload);
     }
 }
 
 void measureLantency(const String &payload)
 {
-    // Serial.println("recieve lantency response.");
+    // 1. 分割payload
+    int idx1 = payload.indexOf(' ');
+    int idx2 = payload.indexOf(' ', idx1 + 1);
+    int idx3 = payload.indexOf(' ', idx2 + 1);
+
+    String s0 = payload.substring(0, idx1);
+    String s1 = payload.substring(idx1 + 1, idx2);
+    String s2 = payload.substring(idx2 + 1, idx3);
+    String s3 = payload.substring(idx3 + 1);
+
+    // 2. 转为uint8_t
+    uint8_t b0 = strtol(s0.c_str(), NULL, 16);
+    uint8_t b1 = strtol(s1.c_str(), NULL, 16);
+    uint8_t b2 = strtol(s2.c_str(), NULL, 16);
+    uint8_t b3 = strtol(s3.c_str(), NULL, 16);
+
+    // 3. 按大端序拼成uint32_t
+    uint32_t ms = ((uint32_t)b0 << 24) | ((uint32_t)b1 << 16) | ((uint32_t)b2 << 8) | b3;
+
+    /*
+    // 你可以在这里使用ms变量
+    Serial.print("毫秒数: ");
+    Serial.println(ms);
+    */
+
+    // 继续你的逻辑
     CalcLantency();
 }
 
