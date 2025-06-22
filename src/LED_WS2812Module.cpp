@@ -1,4 +1,5 @@
 #include "LED_WS2812Module.h"
+#include "SyncTime.h"
 
 const int NUM_LEDS = 576; // LED数量
 const int DATA_PIN = 45;    // 选择你的GPIO引脚
@@ -20,6 +21,12 @@ void LED_WS2812_init()
     strip.begin();
     // 创建互斥锁
     ledControlMutex = xSemaphoreCreateMutex();
+    
+    // 检查互斥锁是否创建成功
+    if (ledControlMutex == NULL) {
+        Serial.println("错误：无法创建LED控制互斥锁");
+        return;
+    }
 
     setColor(COLOR_YELLOW);
     setBright(10);
@@ -113,22 +120,27 @@ static void update_LED_WS2812(void)
         return;
     }
     
-    // 检查是否从非闪烁状态切换到闪烁模式
-    // 这个条件确保同步逻辑只在状态"转换"时执行一次，不影响后续循环闪烁的性能。
-    if ((!lastState.isBlinking && currentState.isBlinking) || // 从不闪烁到闪烁
-    (currentState.isBlinking && // 已经在闪烁模式下
-     (lastState.blinkRate != currentState.blinkRate ||
-      lastState.color != currentState.color ||
-      lastState.brightness != currentState.brightness))) // 闪烁参数变化
+    // 检查闪烁状态是否改变
+    // 这个条件确保同步逻辑只在状态改变时执行一次，不影响后续循环闪烁的性能。
+    bool needsTimeSynchronization = false;       
+
+    if (!lastState.isBlinking && currentState.isBlinking) {     //首次进入闪烁
+        needsTimeSynchronization = true; 
+    } else if (lastState.isBlinking && currentState.isBlinking) {       // 已经在闪烁，但闪烁参数发生变化
+        if (lastState.blinkRate != currentState.blinkRate ||            // 闪烁频率发生变化
+            lastState.color != currentState.color ||                    // 颜色发生变化
+            lastState.brightness != currentState.brightness) {          // 亮度发生变化
+            needsTimeSynchronization = true;
+        }
+    }
+
+    if (needsTimeSynchronization)  // 闪烁参数变化
     {
-        /*
-        // 刚刚从不闪烁切换到闪烁模式，执行时间同步逻辑
-        // 1. 获取当前全局时间（模拟 gettime()，单位毫秒）
-        // 使用 uint64_t 确保毫秒数足够大，避免溢出，例如系统运行数天后。
-        */
-        uint64_t current_time_ms = (uint64_t)xTaskGetTickCount() * portTICK_PERIOD_MS; 
+
+
+        uint64_t current_time_ms = getTime_ms(); 
         //如果要切换为gettime()修改这里为uint64_t current_time_ms = gettime_ms();
-        uint64_t current_seconds = current_time_ms / 1000;
+        uint64_t current_seconds = getTime_s();
 
         /*
         // 2. 计算下一个偶数秒的毫秒时间作为闪烁的起始同步点。
@@ -328,6 +340,8 @@ void LED_Test_Task(void *pvParameters)
         Serial.print(state == 0 ? "Blinking" : "Steady");
         Serial.print(", SubState: ");
         Serial.print((uint64_t)xTaskGetTickCount() * portTICK_PERIOD_MS);
+        Serial.print("  /  ");
+        Serial.print(getTime_ms());
         Serial.print("ms");
         Serial.print(", Color: ");
         Serial.print(newState.color == COLOR_RED ? "Red" : "Yellow");
