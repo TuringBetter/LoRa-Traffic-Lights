@@ -20,7 +20,7 @@ SyncTime_Visual_t getTime() {
     SyncTime_Visual_t visualTime;
 
     // 获取自系统启动以来的微秒数
-    uint32_t current_millis = getLoraMs() + getLantency();
+    uint32_t current_millis = getRealTimeMs() + getLantency();
 
     // 将微秒转换为毫秒，并对一天的毫秒数取模，实现循环
     uint32_t total_ms_in_day = current_millis % MS_PER_DAY;
@@ -40,7 +40,7 @@ SyncTime_Visual_t getTime() {
 
 uint32_t getTime_s() {
     // 获取自系统启动以来的微秒数
-    uint32_t current_millis = getLoraMs() + getLantency();
+    uint32_t current_millis = getRealTimeMs() + getLantency();
     // 将微秒转换为秒，并对一天的秒数取模，实现循环
     // 1天 = 24小时 * 60分钟/小时 * 60秒/分钟 = 86,400 秒
     return (current_millis / 1000);
@@ -48,7 +48,7 @@ uint32_t getTime_s() {
 
 uint32_t getTime_ms() {
     // 获取自系统启动以来的微秒数
-    uint64_t current_millis = getLoraMs() + getLantency();
+    uint64_t current_millis = getRealTimeMs() + getLantency();
 
     // 将微秒转换为毫秒，并对一天的毫秒数取模，实现循环
     return current_millis;

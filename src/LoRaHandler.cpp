@@ -75,7 +75,7 @@ void measureLantency(const String &payload)
     CalcLantency();
 }
 
-uint32_t getLoraMs() {
+uint32_t getRealTimeMs() {
     return REAL_TIME_MS;
 }
 

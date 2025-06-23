@@ -3,4 +3,4 @@
 
 void handlePayload(uint8_t port, const String& payload);
 
-uint32_t getLoraMs();
+uint32_t getRealTimeMs();
