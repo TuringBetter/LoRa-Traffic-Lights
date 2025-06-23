@@ -43,7 +43,7 @@ uint32_t getTime_s() {
     uint32_t current_millis = getLoraMs() + getLantency();
     // 将微秒转换为秒，并对一天的秒数取模，实现循环
     // 1天 = 24小时 * 60分钟/小时 * 60秒/分钟 = 86,400 秒
-    return ((current_millis / 1000) % (24ULL * 60 * 60));
+    return (current_millis / 1000);
 }
 
 uint32_t getTime_ms() {
@@ -51,7 +51,7 @@ uint32_t getTime_ms() {
     uint64_t current_millis = getLoraMs() + getLantency();
 
     // 将微秒转换为毫秒，并对一天的毫秒数取模，实现循环
-    return (current_millis % MS_PER_DAY);
+    return current_millis;
 }
 
 /*微秒*

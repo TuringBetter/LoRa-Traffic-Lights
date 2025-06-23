@@ -12,7 +12,7 @@ static void setBrightness(const String& payload);
 static void setSwitch(const String& payload);
 static void setAll(const String& payload);
 
-static uint32_t lora_ms = 0;
+static uint32_t REAL_TIME_MS = 0;
 
 static const portHandler portHandlers[] = 
 {
@@ -71,20 +71,12 @@ void measureLantency(const String &payload)
     uint8_t b3 = strtol(s3.c_str(), NULL, 16);
 
     // 3. 按大端序拼成uint32_t
-    uint32_t ms = ((uint32_t)b0 << 24) | ((uint32_t)b1 << 16) | ((uint32_t)b2 << 8) | b3;
-    lora_ms = ms;
-    /*
-    // 你可以在这里使用ms变量
-    Serial.print("毫秒数: ");
-    Serial.println(ms);
-    */
-
-    // 继续你的逻辑
+    REAL_TIME_MS = ((uint32_t)b0 << 24) | ((uint32_t)b1 << 16) | ((uint32_t)b2 << 8) | b3;
     CalcLantency();
 }
 
 uint32_t getLoraMs() {
-    return lora_ms;
+    return REAL_TIME_MS;
 }
 
 void setFreq(const String &payload)
