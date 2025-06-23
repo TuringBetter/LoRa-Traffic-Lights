@@ -5,13 +5,13 @@
 // #include "ButtonModule.h"
 #include "LoRaModule.h"
 // #include "FlashingLightModule.h"
-// #include "LED_WS2812Module.h"
+#include "LED_WS2812Module.h"
 // #include "RadarModule.h"
 #include "LoRaLantency.h"
 #include "SyncTime.h"
 
 // 测试任务句柄声明
-// TaskHandle_t LED_Test_TaskHandle = NULL;
+TaskHandle_t LED_Test_TaskHandle = NULL;
 TaskHandle_t SyncTime_Test_TaskHandle = NULL;
 
 void setup() {
@@ -26,7 +26,7 @@ void setup() {
     // Button_init();
     // Acc_init();
     // Radar_init();
-    // LED_WS2812_init();
+     LED_WS2812_init();
 
 /** *
     // 创建按键检测任务
@@ -98,7 +98,7 @@ void setup() {
         &latencyTaskHandle,    // 任务句柄
         1                      // 运行核心 (1 = 核心1)
     );
-/** *
+/** */
     // 创建LED控制任务
     xTaskCreatePinnedToCore(
         LED_WS2812_Task,          // 任务函数
@@ -109,7 +109,7 @@ void setup() {
         &LED_WS2812_TaskHandle,   // 任务句柄
         1                         // 运行核心 (1 = 核心1)
     );  
-/** *
+/** */
     // 创建LED测试任务
     xTaskCreatePinnedToCore(
         LED_Test_Task,            // 任务函数

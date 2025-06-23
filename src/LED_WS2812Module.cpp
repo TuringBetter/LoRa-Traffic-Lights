@@ -188,10 +188,10 @@ static void update_LED_WS2812(void)
         
         // 判断是否到达下一个闪烁状态切换点
         // 只有当经过的时间超过一个"亮"或"灭"的持续时间时，才切换状态。
-        if((xTaskGetTickCount() - lastBlinkTime) >= pdMS_TO_TICKS(blinkInterval)) 
+        if((getTime_ms() - lastBlinkTime) >= pdMS_TO_TICKS(blinkInterval)) 
         {
             ledState = !ledState; // 翻转LED状态 (亮 -> 灭 或 灭 -> 亮)
-            lastBlinkTime = xTaskGetTickCount(); // 更新上一次状态切换的时间为当前时间
+            lastBlinkTime = getTime_ms(); // 更新上一次状态切换的时间为当前时间
             
             if(ledState) 
             {
