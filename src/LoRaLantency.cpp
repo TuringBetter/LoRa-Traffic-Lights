@@ -5,7 +5,7 @@ TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
 // static const uint32_t   SYNC_LANTENCY         = 1000 ;  // 同步延迟时间（1秒）
 
 
-static uint32_t LENTENCY               = 800   ;    // 通信延迟时间
+static uint32_t LENTENCY               = 0     ;        // 通信延迟时间
 static uint32_t SEND_TIME              = 0     ;        // 发送时间
 static uint32_t RECV_TIME              = 0     ;        // 接收时间
 
