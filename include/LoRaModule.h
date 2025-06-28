@@ -24,3 +24,6 @@ void LoRa_init();
 void sendData(const String& payload);
 
 void LoRa_init_IDF();
+
+void joinNetwork_IDF(bool joinMode);
+void addMuticast_IDF(const String& DevAddr, const String& AppSKey, const String& NwkSKey);
