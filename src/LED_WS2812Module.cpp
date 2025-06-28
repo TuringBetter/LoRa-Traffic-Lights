@@ -100,7 +100,7 @@ void LED_WS2812_Task(void *pvParameters)
 
 static void update_LED_WS2812(void)
 {
-    static TickType_t lastBlinkTime = 0; // 上一次闪烁状态切换的时间点
+    static uint32_t lastBlinkTime = 0; // 上一次闪烁状态切换的时间点
     // 闪烁状态:true为亮，false为灭。初始为true，表示闪烁周期开始时默认亮
     static bool ledState = true; 
     // 记录上一次的LED控制状态。
@@ -144,28 +144,20 @@ static void update_LED_WS2812(void)
         //如果要切换为gettime()修改这里为uint64_t current_time_ms = gettime_ms();
         uint32_t current_seconds = getTime_s();
 
-        /*
-        // 2. 计算下一个偶数秒的毫秒时间作为闪烁的起始同步点。
-        // 这样可以确保无论何时启动闪烁，第一次动作都会对齐到最近的未来偶数整秒。
-        */
-        uint32_t next_even_second_ms;
+        // 计算下一个偶数秒的毫秒时间作为闪烁的起始同步点。
         if (current_seconds % 2 == 0) 
         {
             // 当前秒是偶数，下一个偶数秒是当前秒 + 2秒
-            next_even_second_ms = (current_seconds + 2) * 1000;
+            lastBlinkTime = (current_seconds + 2) * 1000;
         } 
         else 
         {
             // 当前秒是奇数，下一个偶数秒是当前秒 + 1秒
-            next_even_second_ms = (current_seconds + 1) * 1000;
+            lastBlinkTime = (current_seconds + 1) * 1000;
         }
-        /*
-        // 3. 设置 lastBlinkTime 为这个计算出的同步时间点对应的 TickType_t 值。
-        // 这将使得LED在达到 next_even_second_ms 时才进行第一次闪烁状态切换。
-        */
-        lastBlinkTime = pdMS_TO_TICKS(next_even_second_ms);
+
         
-        // 4. 初始化 ledState 为 false (灭)，并立即熄灭LED。
+        // 初始化 ledState 为 false (灭)，并立即熄灭LED。
         // 这样在等待同步点到来之前，LED会保持熄灭状态，避免不一致。
         ledState = false; 
         clearStrip(); // 确保LED在等待期间是灭的
@@ -190,7 +182,7 @@ static void update_LED_WS2812(void)
         
         // 判断是否到达下一个闪烁状态切换点
         // 只有当经过的时间超过一个"亮"或"灭"的持续时间时，才切换状态。
-        if((getTime_ms() - lastBlinkTime) >= pdMS_TO_TICKS(blinkInterval)) 
+        if((getTime_ms() - lastBlinkTime) >= blinkInterval) 
         {
             ledState = !ledState; // 翻转LED状态 (亮 -> 灭 或 灭 -> 亮)
             lastBlinkTime = getTime_ms(); // 更新上一次状态切换的时间为当前时间
