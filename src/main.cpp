@@ -1,18 +1,22 @@
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "AccelerometerModule.h"
-#include "ButtonModule.h"
+// #include "AccelerometerModule.h"
+// #include "ButtonModule.h"
 #include "LoRaModule.h"
 // #include "FlashingLightModule.h"
 #include "LED_WS2812Module.h"
-#include "RadarModule.h"
+// #include "RadarModule.h"
 #include "LoRaLantency.h"
-// put function declarations here:
+#include "SyncTime.h"
+
+// 测试任务句柄声明
+TaskHandle_t LED_Test_TaskHandle = NULL;
+TaskHandle_t SyncTime_Test_TaskHandle = NULL;
 
 void setup() {
     Serial.begin(115200);
-    // Serial.println("系统初始化");
+    Serial.println("系统初始化");
 
 /** *
     // FlashingLight_init();
@@ -22,7 +26,7 @@ void setup() {
     // Button_init();
     // Acc_init();
     // Radar_init();
-    LED_WS2812_init();
+     LED_WS2812_init();
 
 /** *
     // 创建按键检测任务
@@ -83,7 +87,7 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 /** *
-/** *
+/** */
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数
@@ -94,8 +98,7 @@ void setup() {
         &latencyTaskHandle,    // 任务句柄
         1                      // 运行核心 (1 = 核心1)
     );
-/** *
-
+/** */
     // 创建LED控制任务
     xTaskCreatePinnedToCore(
         LED_WS2812_Task,          // 任务函数
@@ -105,6 +108,28 @@ void setup() {
         1,                        // 任务优先级
         &LED_WS2812_TaskHandle,   // 任务句柄
         1                         // 运行核心 (1 = 核心1)
+    );  
+/** */
+    // 创建LED测试任务
+    xTaskCreatePinnedToCore(
+        LED_Test_Task,            // 任务函数
+        "LED_Test_Task",          // 任务名称
+        4096,                     // 堆栈大小
+        NULL,                     // 任务参数
+        1,                        // 任务优先级
+        &LED_Test_TaskHandle,     // 任务句柄
+        1                         // 运行核心 (1 = 核心1)
+    );
+/** */
+    // 创建 SyncTime 测试任务
+    xTaskCreatePinnedToCore(
+        SyncTime_Test_Task,      // 任务函数
+        "SyncTime_Test",         // 任务名称
+        4096,                    // 堆栈大小（根据需要调整）
+        NULL,                    // 任务参数
+        1,                       // 任务优先级 (可以根据需要调整)
+        &SyncTime_Test_TaskHandle, // 任务句柄
+        0                        // 运行核心 (0 = 核心0，为了负载均衡可以放到另一个核心)
     );
 /** */
   // 删除setup任务，因为不再需要
