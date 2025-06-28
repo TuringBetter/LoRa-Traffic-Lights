@@ -38,7 +38,11 @@ void handlePayload(uint8_t port, const String& payload)
 
     portHandler cur_port_handler = portHandlers[port];
     if(cur_port_handler!=NULL)
+    {
+        Serial.print("port:");
+        Serial.println(port);
         cur_port_handler(payload);
+    }
 }
 
 

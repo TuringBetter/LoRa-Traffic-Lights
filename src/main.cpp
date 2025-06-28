@@ -18,12 +18,12 @@ void setup() {
 /** *
 /** */
     LoRa_init_IDF();
-    Button_init();
-    Acc_init();
-    Radar_init();
-    LED_WS2812_init();
+    // Button_init();
+    // Acc_init();
+    // Radar_init();
+    // LED_WS2812_init();
 
-/** */
+/** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
         buttonTask,        // 任务函数
@@ -35,7 +35,7 @@ void setup() {
         1                 // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
   // 创建雷达检测任务
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
@@ -47,7 +47,7 @@ void setup() {
         1                    // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数
@@ -70,7 +70,7 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
     // 创建心跳任务
     xTaskCreatePinnedToCore(
         heartBeatTask,           // 任务函数
@@ -93,7 +93,7 @@ void setup() {
         &latencyTaskHandle,    // 任务句柄
         1                      // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
 
     // 创建LED控制任务
     xTaskCreatePinnedToCore(
