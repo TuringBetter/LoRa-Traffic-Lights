@@ -45,11 +45,42 @@ void LoRa_init_IDF()
     uart_param_config(UART_NUM_1, &uart_config);
     uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
     uart_set_pin(UART_NUM_1, LoRa_TX, LoRa_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-
+    delay(500);
+    joinNetwork_IDF(0);
+    delay(500);
+    addMuticast_IDF("01651ed0", "e4449b09cca06c405a1c1509f7d9a40b", "aa97576782b624e2cbeb82f5f8ab066b");
+    delay(500);
+    joinNetwork_IDF(1);
     delay(10000);
     sendData("1");
     delay(2000);
 
+}
+
+
+void joinNetwork_IDF(bool joinMode){
+    // 构建AT指令 - 加入网络
+    String command = "AT+CJOIN=";
+    command += String(joinMode ? 1 : 0);  // 根据布尔值设置第一个参数
+    command += ",0,8,2";  // 固定参数
+    command += "\n";  // 添加换行符
+
+    // 使用ESP-IDF UART API发送数据
+    uart_write_bytes(UART_NUM_1, command.c_str(), command.length());
+}
+
+void addMuticast_IDF(const String &DevAddr, const String &AppSKey, const String &NwkSKey){
+    // 添加多播配置
+    String command = "AT+CADDMUTICAST=";
+    command += DevAddr;  // DevAddr
+    command += ",";
+    command += AppSKey;  // AppSKey
+    command += ",";
+    command += NwkSKey;  // NwkSKey
+    command += "\n";  // 添加换行符
+
+    // 使用ESP-IDF UART API发送数据
+    uart_write_bytes(UART_NUM_1, command.c_str(), command.length());
 }
 
 void sendData_IDF(const String &payload)
