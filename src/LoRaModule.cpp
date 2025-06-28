@@ -5,44 +5,16 @@
 static const uint64_t   LoRa_RX = 18;
 static const uint64_t   LoRa_TX = 17;
 
-/* *
-static LedColor _last_color;
-static uint16_t _last_frequency;
-static uint16_t _last_brightness;
-static unsigned long _messageReceiveTime = 0;  // 记录车辆通过的时间
-/* */
-
-
-static uint32_t LoRa_Connect_Delay          = 800   ;    // 通信延迟时间
-static uint32_t LoRa_Send_TIME              = 0     ;        // 发送时间
-static uint32_t LoRa_Recv_TIME              = 0     ;        // 接收时间
-static bool     waitingForResponse          = false ;
-
-static const uint32_t SYNC_DELAY_MS         = 1000  ;  // 同步延迟时间（1秒）
-/* *
-static ScheduledCommand scheduledCommand;  // 存储待执行的命令
-static bool hasScheduledCommand = false;   // 是否有待执行的命
-/* */
 
 // 外部使用的变量
-SemaphoreHandle_t   latencySemaphore                 ;  // 延迟测量完成信号量  
+
 TaskHandle_t        loraReceiveTaskHandle      = NULL;
-TaskHandle_t        latencyTaskHandle          = NULL;  // 延迟测量任务句柄
-TaskHandle_t        heartBeatTaskHandle        = NULL;  // 延迟测量任务句柄
-/* *
-// 声明外部变量
-extern volatile LedState              ledstate;
-extern bool                 _ledStateChanged;
-extern SemaphoreHandle_t    _ledStateMutex;
-/* */
+TaskHandle_t        heartBeatTaskHandle        = NULL;  // 心跳任务句柄
+
 
 static void receiveData_Test();
 static void receiveData();
 static void receiveData_IDF();
-static void measureLatency();
-// static void scheduleCommand(uint8_t port, const String& payload, uint32_t delay_ms);
-static uint32_t getLatency();
-
 static void sendData_Arduino(const String &payload);
 static void sendData_IDF(const String &payload);
 
@@ -51,8 +23,6 @@ void LoRa_init()
     Serial1.begin(9600, SERIAL_8N1, LoRa_RX, LoRa_TX);
     delay(10000);
     sendData("1");
-    // 创建延迟测量信号量
-    latencySemaphore = xSemaphoreCreateBinary();
 }
 
 void sendData(const String &payload)
@@ -78,9 +48,7 @@ void LoRa_init_IDF()
 
     delay(10000);
     sendData("1");
-    // Serial.println("send 1");
-    // 创建延迟测量信号量
-    latencySemaphore = xSemaphoreCreateBinary();
+    delay(2000);
 
 }
 
@@ -116,21 +84,6 @@ void sendData_Arduino(const String &payload)
     // Serial.println(command);
     // 发送命令
     Serial1.println(command);
-}
-
-
-uint32_t getLatency()
-{
-    // 等待延迟测量完成
-    if (xSemaphoreTake(latencySemaphore, pdMS_TO_TICKS(5000)) == pdTRUE) 
-    {
-        return LoRa_Connect_Delay;
-    } 
-    else 
-    {
-        // Serial.println("获取延迟值超时");
-        return 0;
-    }
 }
 
 void receiveData()
@@ -262,46 +215,16 @@ void receiveData_IDF()
     }
 }
 
-void measureLatency()
-{
-    sendData("06");
-    LoRa_Send_TIME = millis();
-    waitingForResponse = true;
-}
 
 void loraReceiveTask(void *pvParameters)
 {
     while(true)
     {
-        // receiveData();
         receiveData_IDF();
-        // receiveData_Test();
         vTaskDelay(pdMS_TO_TICKS(10));  // 10ms延时
     }
 }
 
-void latencyTask(void *pvParameters)
-{
-    const TickType_t xDelay = pdMS_TO_TICKS(10*60*1000);  // 每10min测量一次延迟
-    // const TickType_t xDelay = pdMS_TO_TICKS(1*2*1000);  // 每10min测量一次延迟
-    
-    while(true) {
-        // 测量通信延迟
-        measureLatency();
-        /** *
-        // 获取并打印延迟值
-        uint32_t latency = getLatency();
-        if(latency!=0)
-        {
-            Serial.print("当前通信延迟: ");
-            Serial.print(latency);
-            Serial.println(" ms");
-        }
-        /** */
-        // 任务延时
-        vTaskDelay(xDelay);
-    }    
-}
 void heartBeatTask(void *pvParameters)
 {
     // const TickType_t baseDelay = pdMS_TO_TICKS(30*60*1000);  // 基础延时时间
@@ -314,15 +237,6 @@ void heartBeatTask(void *pvParameters)
         vTaskDelay(randomDelay);
     }
 }
-/**
-void scheduleCommand(uint8_t port, const String &payload, uint32_t delay_ms)
-{
-    scheduledCommand.port = port;
-    scheduledCommand.payload = payload;
-    scheduledCommand.executeTime = millis() + delay_ms;
-    hasScheduledCommand = true;
-}
-/**/
 
 void receiveData_Test()
 {

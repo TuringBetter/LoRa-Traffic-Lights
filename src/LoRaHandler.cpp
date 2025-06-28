@@ -1,20 +1,21 @@
 #include "LoRaHandler.h"
 #include "LED_WS2812Module.h"
-#include "FlashingLightModule.h"
+#include "LoRaLantency.h"
 
 typedef void (*portHandler)(const String& payload);
 
-static void portHandler10(const String& payload);
-static void portHandler11(const String& payload);
-static void portHandler12(const String& payload);
-static void portHandler13(const String& payload);
-static void portHandler14(const String& payload);
-static void portHandler15(const String& payload);
+static void measureLantency(const String& payload);
+static void setFreq(const String& payload);
+static void setColor(const String& payload);
+static void setManner(const String& payload);
+static void setBrightness(const String& payload);
+static void setSwitch(const String& payload);
+static void setAll(const String& payload);
 
 static const portHandler portHandlers[] = 
 {
     NULL,                // 0
-    NULL,                // 1
+    measureLantency,     // 1
     NULL,                // 2
     NULL,                // 3
     NULL,                // 4
@@ -23,12 +24,12 @@ static const portHandler portHandlers[] =
     NULL,                // 7
     NULL,                // 8
     NULL,                // 9
-    portHandler10,       // 10
-    portHandler11,       // 11
-    portHandler12,       // 12
-    portHandler13,       // 13
-    portHandler14,       // 14
-    portHandler15,       // 15
+    setFreq,             // 10
+    setColor,            // 11
+    setManner,           // 12
+    setBrightness,       // 13
+    setSwitch,           // 14
+    setAll,              // 15
 };
 
 
@@ -39,15 +40,21 @@ void handlePayload(uint8_t port, const String& payload)
     portHandler cur_port_handler = portHandlers[port];
     if(cur_port_handler!=NULL)
     {
-        Serial.print("port:");
+        Serial.print("port: ");
         Serial.println(port);
         cur_port_handler(payload);
     }
 }
 
-
-void portHandler10(const String &payload)
+void measureLantency(const String &payload)
 {
+    // Serial.println("recieve lantency response.");
+    CalcLantency();
+}
+
+void setFreq(const String &payload)
+{
+    // delay(getDelay());
     uint8_t payload_freq = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
     switch(payload_freq) 
     {
@@ -63,14 +70,14 @@ void portHandler10(const String &payload)
     }
 }
 
-void portHandler11(const String &payload)
+void setColor(const String &payload)
 {
     uint8_t color = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
     if(color==0x00) LED_WS2812_SetColor(COLOR_RED);
     else LED_WS2812_SetColor(COLOR_YELLOW);
 }
 
-void portHandler12(const String &payload)
+void setManner(const String &payload)
 {
     uint8_t manner = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
     // 常量
@@ -85,7 +92,7 @@ void portHandler12(const String &payload)
     }
 }
 
-void portHandler13(const String &payload)
+void setBrightness(const String &payload)
 {
     String payloadStr = payload;
     int firstHex = payloadStr.indexOf("0x");
@@ -103,7 +110,7 @@ void portHandler13(const String &payload)
     }
 }
 
-void portHandler14(const String &payload)
+void setSwitch(const String &payload)
 {
     /** */
     const static LED_Control_t LED_OFF = {false, 60, 0, COLOR_OFF};
@@ -122,7 +129,7 @@ void portHandler14(const String &payload)
     /* */
 }
 
-void portHandler15(const String &payload)
+void setAll(const String &payload)
 {
     static LED_Control_t new_led_control;
     String payloadStr = payload;
@@ -155,6 +162,8 @@ void portHandler15(const String &payload)
     int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
     uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
     new_led_control.isBlinking = (manner == 0x00);  // 0x00闪烁，0x01常亮
+
+    // if(manner == 0x00) delay(getDelay());
 
     LED_WS2812_SetState(new_led_control);
 }

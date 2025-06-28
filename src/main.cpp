@@ -7,6 +7,7 @@
 // #include "FlashingLightModule.h"
 #include "LED_WS2812Module.h"
 #include "RadarModule.h"
+#include "LoRaLantency.h"
 // put function declarations here:
 
 void setup() {
@@ -21,7 +22,7 @@ void setup() {
     // Button_init();
     // Acc_init();
     // Radar_init();
-    // LED_WS2812_init();
+    LED_WS2812_init();
 
 /** *
     // 创建按键检测任务
