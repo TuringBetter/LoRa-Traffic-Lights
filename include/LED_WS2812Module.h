@@ -23,18 +23,20 @@ typedef struct
 #define BLINK_RATE_60      60
 #define BLINK_RATE_120     120
 
-extern TaskHandle_t      LED_WS2812_TaskHandle          ;
-extern TaskHandle_t      LED_StatusChange_TaskHandle    ;
-extern SemaphoreHandle_t ledControlMutex                ;
 
 // 初始化函数
 void LED_WS2812_init();
+extern SemaphoreHandle_t ledControlMutex                ;
+
+extern TaskHandle_t      LED_WS2812_TaskHandle          ;
+extern TaskHandle_t      LED_StatusChange_TaskHandle    ;
+extern TaskHandle_t      LED_Test_TaskHandle            ;
 
 // 任务函数
 void LED_WS2812_Task(void *pvParameters);
-void LED_StatusChange_Task(void *pvParameters);
 
 // 测试函数
+void LED_StatusChange_Task(void *pvParameters);
 void LED_Test_Task(void *pvParameters);
 
 // 外部接口函数
@@ -44,5 +46,3 @@ void LED_WS2812_SetBrightness(uint8_t brightness);
 void LED_WS2812_SetBlink(bool isBlinking);
 void LED_WS2812_SetBlinkRate(uint8_t blinkRate);
 void LED_WS2812_GetState(LED_Control_t& curState);  // 获取当前LED状态
-
-uint gettime();

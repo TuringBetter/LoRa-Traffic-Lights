@@ -1,9 +1,10 @@
-#ifndef SYNCTIME_H
-#define SYNCTIME_H
+#pragma once
 
 #include <Arduino.h>
 #include <esp_timer.h>
-
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/semphr.h>
 
 // 时间结构体，用于getTime()的直观可视化输出
 typedef struct {
@@ -11,10 +12,10 @@ typedef struct {
     uint8_t  minutes;
     uint8_t  seconds;
     uint16_t milliseconds;
-} SyncTime_Visual_t;
+} Time_t;
 
 //取当前时间，以结构体形式返回小时、分钟、秒和毫秒。
-SyncTime_Visual_t getTime();
+Time_t getCurrentTime();
 
 //获取当前秒数，以秒为单位（向下取整）
 uint32_t getTime_s();
@@ -27,5 +28,3 @@ uint32_t getTime_ms();
 
 //测试函数
 void SyncTime_Test_Task(void *pvParameters);
-
-#endif // SYNCTIME_H

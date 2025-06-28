@@ -6,6 +6,7 @@ const int DATA_PIN = 45;    // 选择你的GPIO引脚
 
 TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
+TaskHandle_t        LED_Test_TaskHandle            =         NULL;
 SemaphoreHandle_t   ledControlMutex                =         NULL;
 
 static LED_Control_t       ledControl{false,30,10,COLOR_YELLOW}; // 初始ledControl状态：不闪烁，闪烁频率30次/min，亮度10，颜色黄色
@@ -122,22 +123,23 @@ static void update_LED_WS2812(void)
     
     // 检查闪烁状态是否改变
     // 这个条件确保同步逻辑只在状态改变时执行一次，不影响后续循环闪烁的性能。
-    bool needsTimeSynchronization = false;       
+    bool needSync = false;       
 
-    if (!lastState.isBlinking && currentState.isBlinking) {     //首次进入闪烁
-        needsTimeSynchronization = true; 
-    } else if (lastState.isBlinking && currentState.isBlinking) {       // 已经在闪烁，但闪烁参数发生变化
-        if (lastState.blinkRate != currentState.blinkRate ||            // 闪烁频率发生变化
-            lastState.color != currentState.color ||                    // 颜色发生变化
-            lastState.brightness != currentState.brightness) {          // 亮度发生变化
-            needsTimeSynchronization = true;
-        }
+    // 首次进入闪烁
+    if (!lastState.isBlinking && currentState.isBlinking) 
+    {
+        needSync = true; 
+    } 
+    // 已经在闪烁，但闪烁参数发生变化
+    else if (lastState.isBlinking && currentState.isBlinking) 
+    {
+        // 闪烁频率发生变化
+        if (lastState.blinkRate!= currentState.blinkRate)         
+            needSync = true;
     }
 
-    if (needsTimeSynchronization)  // 闪烁参数变化
+    if (needSync)  // 闪烁参数变化
     {
-
-
         uint32_t current_time_ms = getTime_ms(); 
         //如果要切换为gettime()修改这里为uint64_t current_time_ms = gettime_ms();
         uint32_t current_seconds = getTime_s();
@@ -168,7 +170,7 @@ static void update_LED_WS2812(void)
         ledState = false; 
         clearStrip(); // 确保LED在等待期间是灭的
 
-        /**** 添加串口输出：同步事件 ****/
+        /**** 添加串口输出：同步事件 ****
         Serial.print("[Sync Event] Entered blinking mode at ");
         Serial.print(current_time_ms);
         Serial.print(" ms (");

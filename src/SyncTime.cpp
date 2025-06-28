@@ -11,6 +11,8 @@
 // 1天 = 24小时 * 60分钟/小时 * 60秒/分钟 * 1000毫秒/秒 * 1000微秒/毫秒 = 86,400,000,000 微秒
 #define US_PER_DAY (MS_PER_DAY * 1000ULL)
 
+TaskHandle_t SyncTime_Test_TaskHandle = NULL;
+
 /*
 * 用于存储 esp_timer_get_time() 当前值与“当天”实际时间之间的同步偏移量（微秒）。
 * 这个偏移量会相对较小，反映的是esp_timer相对于当天0点0分0秒的偏差。
@@ -103,8 +105,8 @@ static uint64_t getSafeTimeDiff(uint64_t currentTime, uint64_t lastTime) {
 }
 
 
-SyncTime_Visual_t getTime() {
-    SyncTime_Visual_t visualTime;
+Time_t getCurrentTime() {
+    Time_t visualTime;
 
     // 获取校准后的微秒时间，这个值已经是当天内的微秒数
     uint64_t calibrated_micros_in_day = getCalibratedMicros();
@@ -157,7 +159,7 @@ void SyncTime_Test_Task(void *pvParameters) {
     Serial.println("Automatic time calibration will occur when getRealTimeMs() or getLantency() values change.");
 
     while (1) {
-        SyncTime_Visual_t visual_time = getTime(); // 每次调用getTime()都会触发getCalibratedMicros()，从而自动校准
+        Time_t visual_time = getCurrentTime(); // 每次调用getTime()都会触发getCalibratedMicros()，从而自动校准
         uint64_t seconds = getTime_s();
         uint64_t milliseconds = getTime_ms();
         uint64_t microseconds = getTime_us();

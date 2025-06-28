@@ -1,43 +1,35 @@
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-// #include "AccelerometerModule.h"
-// #include "ButtonModule.h"
+#include "AccelerometerModule.h"
+#include "ButtonModule.h"
 #include "LoRaModule.h"
-// #include "FlashingLightModule.h"
 #include "LED_WS2812Module.h"
-// #include "RadarModule.h"
+#include "RadarModule.h"
 #include "LoRaLantency.h"
 #include "SyncTime.h"
 
-// 测试任务句柄声明
-TaskHandle_t LED_Test_TaskHandle = NULL;
-TaskHandle_t SyncTime_Test_TaskHandle = NULL;
+
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("系统初始化");
-
-/** *
-    // FlashingLight_init();
-/** *
 /** */
     LoRa_init_IDF();
     // Button_init();
     // Acc_init();
     // Radar_init();
-     LED_WS2812_init();
+    LED_WS2812_init();
 
 /** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
         buttonTask,        // 任务函数
         "ButtonTask",      // 任务名称
-        4096,             // 堆栈大小
-        NULL,             // 任务参数
-        1,                // 任务优先级
-        &ButtonTaskHandle,// 任务句柄
-        1                 // 运行核心 (1 = 核心1)
+        4096,              // 堆栈大小
+        NULL,              // 任务参数
+        1,                 // 任务优先级
+        &ButtonTaskHandle, // 任务句柄
+        1                  // 运行核心 (1 = 核心1)
     );
 
 /** *
@@ -45,7 +37,7 @@ void setup() {
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
         "RadarTask",         // 任务名称
-        4096,               // 堆栈大小
+        4096,                // 堆栈大小
         NULL,                // 任务参数
         1,                   // 任务优先级
         &radarTaskHandle,    // 任务句柄
@@ -87,7 +79,7 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 /** *
-/** */
+/** *
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数
@@ -109,7 +101,7 @@ void setup() {
         &LED_WS2812_TaskHandle,   // 任务句柄
         1                         // 运行核心 (1 = 核心1)
     );  
-/** */
+/** *
     // 创建LED测试任务
     xTaskCreatePinnedToCore(
         LED_Test_Task,            // 任务函数
@@ -120,7 +112,7 @@ void setup() {
         &LED_Test_TaskHandle,     // 任务句柄
         1                         // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
     // 创建 SyncTime 测试任务
     xTaskCreatePinnedToCore(
         SyncTime_Test_Task,      // 任务函数
