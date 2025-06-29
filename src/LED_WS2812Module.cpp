@@ -100,12 +100,13 @@ void LED_WS2812_Task(void *pvParameters)
 
 static void update_LED_WS2812(void)
 {
-    static uint32_t lastBlinkTime = 0; // 上一次闪烁状态切换的时间点
-    // 闪烁状态:true为亮，false为灭。初始为true，表示闪烁周期开始时默认亮
-    static bool ledState = true; 
-    // 记录上一次的LED控制状态。
-    // 确保初始值与ledControl的初始值匹配
+    static uint32_t lastBlinkTime = 0;      // 上一次闪烁状态切换的时间点
+    static uint32_t nextSyncTime = 0;       // 下一个同步时间点
+    static bool ledState = true;            // 记录上一次的LED控制状态，确保初始值与ledControl的初始值匹配
+    static bool isWaitingForSync = false;   // 标识初始同步是否完成
+
     static LED_Control_t lastState{false,30,10,COLOR_YELLOW}; 
+
 
     LED_Control_t currentState;
     
@@ -138,29 +139,25 @@ static void update_LED_WS2812(void)
             needSync = true;
     }
 
-    if (needSync)  // 闪烁参数变化
+    if (needSync)  // 闪烁参数变化或首次进入闪烁模式
     {
-        uint32_t current_time_ms = getTime_ms(); 
-        //如果要切换为gettime()修改这里为uint64_t current_time_ms = gettime_ms();
         uint32_t current_seconds = getTime_s();
 
         // 计算下一个偶数秒的毫秒时间作为闪烁的起始同步点。
         if (current_seconds % 2 == 0) 
         {
-            // 当前秒是偶数，下一个偶数秒是当前秒 + 2秒
-            lastBlinkTime = (current_seconds + 2) * 1000;
+            nextSyncTime = (current_seconds + 2) * 1000;
         } 
         else 
         {
-            // 当前秒是奇数，下一个偶数秒是当前秒 + 1秒
-            lastBlinkTime = (current_seconds + 1) * 1000;
+            nextSyncTime = (current_seconds + 1) * 1000;
         }
-
         
-        // 初始化 ledState 为 false (灭)，并立即熄灭LED。
-        // 这样在等待同步点到来之前，LED会保持熄灭状态，避免不一致。
+        // 设定初始状态，等待同步，LED熄灭
+        isWaitingForSync = true; 
         ledState = false; 
-        clearStrip(); // 确保LED在等待期间是灭的
+        clearStrip();               // 确保LED在等待期间是灭的
+        lastBlinkTime = 0;          // 重置 lastBlinkTime，表示尚未进入正常闪烁周期，以此判断是否在等待同步
 
         /**** 添加串口输出：同步事件 ****
         Serial.print("[Sync Event] Entered blinking mode at ");
@@ -177,28 +174,48 @@ static void update_LED_WS2812(void)
     
     if(currentState.isBlinking) 
     {
-        // 计算闪烁间隔（毫秒）：一个完整亮灭周期的一半
+        uint32_t currentTime = getTime_ms(); 
         uint32_t blinkInterval = (60000 / currentState.blinkRate) / 2;
         
-        // 判断是否到达下一个闪烁状态切换点
-        // 只有当经过的时间超过一个"亮"或"灭"的持续时间时，才切换状态。
-        if((getTime_ms() - lastBlinkTime) >= blinkInterval) 
+        // 判断是否正在等待同步点
+        if (isWaitingForSync) // 如果nextSyncTime非0，说明有一个同步点需要等待
         {
-            ledState = !ledState; // 翻转LED状态 (亮 -> 灭 或 灭 -> 亮)
-            lastBlinkTime = getTime_ms(); // 更新上一次状态切换的时间为当前时间
-            
-            if(ledState) 
+            // 检查是否已达到或超过同步点
+            // 也可以用currentTime >= nextSyncTime更好理解，但带符号差值更严谨
+            if ((int32_t)(currentTime - nextSyncTime) >= 0) 
             {
-                // 如果当前是亮状态，设置LED为指定颜色和亮度
+                // 到达同步点，LED首次点亮
+                ledState = true; 
                 setColor(currentState.color);
                 setBright(currentState.brightness);
-            } 
-            else 
-            {
-                // 如果当前是灭状态，关闭所有LED（设置为黑色）
-                clearStrip();
+                
+                lastBlinkTime = currentTime; // 将 lastBlinkTime 设置为实际点亮的时间
+                isWaitingForSync = false;    // 清除等待同步点
+                nextSyncTime = 0;            // 同步完成，清除 nextSyncTime 标志
+                
+                // Serial.printf("[Sync Achieved] LED ON at %u ms (Sync point: %u ms)\n", currentTime, lastBlinkTime);
             }
         }
+        else // 不在等待同步(nextSyncTime为0)，执行常规闪烁逻辑
+        {
+            // 只有当 lastBlinkTime被有效设置过（即不是初始的0），才计算时间差
+            // 首次点亮后lastBlinkTime就会被设置为 currentTime
+            if (lastBlinkTime != 0 && getSafeTimeDiff_ms(currentTime, lastBlinkTime) >= blinkInterval)
+            {
+                ledState = !ledState; // 翻转LED状态
+                lastBlinkTime = currentTime; // 更新 lastBlinkTime 为实际切换的时间
+                
+                if(ledState) 
+                {
+                    setColor(currentState.color);
+                    setBright(currentState.brightness);
+                } 
+                else 
+                {
+                    clearStrip();
+                }
+            }
+        } 
     } 
     else // 常亮模式 (currentState.isBlinking == false)
     {
@@ -212,8 +229,11 @@ static void update_LED_WS2812(void)
             setBright(currentState.brightness);
         }
         
-        // 当处于常亮模式时，ledState 和 lastBlinkTime 保持其值，
-        // 在下次切换到闪烁模式时，它们会被同步逻辑重新计算和设置，无需在这里额外重置。
+        // 当切换到常亮模式时，清除闪烁相关的状态
+        // 这样下次再进入闪烁模式时，会重新触发同步逻辑
+        isWaitingForSync = false;   // 清除等待同步点（这一行是冗余，也可以删）
+        lastBlinkTime = 0;          // 清除上次闪烁时间，确保下次闪烁重新同步
+        ledState = true;            // 常亮模式下LED是亮的
     }
     
     // 在函数末尾，更新 lastState 为当前的 currentState，为下一次循环做准备

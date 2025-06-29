@@ -104,6 +104,16 @@ static uint64_t getSafeTimeDiff(uint64_t currentTime, uint64_t lastTime) {
     }
 }
 
+// 计算时间差，避免跨日时间回绕问题
+// currentTime必须是在总时间轴上晚于/将来于/大于lastTime的时间，最好是用当前时间与过去时间计算
+uint32_t getSafeTimeDiff_ms(uint32_t currentTime, uint32_t lastTime) {
+    if (currentTime >= lastTime) {
+        return currentTime - lastTime;
+    } else {
+        // 发生环绕
+        return (MS_PER_DAY - lastTime) + currentTime; 
+    }
+}
 
 Time_t getCurrentTime() {
     Time_t visualTime;

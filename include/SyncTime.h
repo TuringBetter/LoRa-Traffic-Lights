@@ -26,5 +26,9 @@ uint32_t getTime_ms();
 //获取当前微秒数，以微秒为单位（向下取整）。
 //uint64_t getTime_us();
 
+// 计算时间差，避免跨日时间回绕问题
+// currentTime必须是在总时间轴上晚于/将来于/大于lastTime的时间，最好是用当前时间与过去时间计算
+uint32_t getSafeTimeDiff_ms(uint32_t currentTime, uint32_t lastTime);
+
 //测试函数
 void SyncTime_Test_Task(void *pvParameters);
