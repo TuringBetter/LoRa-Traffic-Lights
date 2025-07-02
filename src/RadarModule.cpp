@@ -4,7 +4,7 @@
 
 // 定义GPIO引脚
 static const int RADAR_GPIO_PIN         = 16     ; // GPIO16引脚
-static const int LED_GPIO_PIN           = 45    ; // GPIO45引脚
+// static const int LED_GPIO_PIN           = 45    ; // GPIO45引脚
 
 static bool     _vehicleDetected        = false ; // 车辆检测状态
 static const uint32_t   LED_ON_DELAY    = 2500  ;  // 车辆超时时间（毫秒）
