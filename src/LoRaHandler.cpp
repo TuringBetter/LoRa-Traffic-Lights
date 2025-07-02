@@ -1,6 +1,7 @@
 #include "LoRaHandler.h"
 #include "LED_WS2812Module.h"
 #include "LoRaLantency.h"
+#include "SyncTime.h"
 
 typedef void (*portHandler)(const String& payload);
 
@@ -73,6 +74,9 @@ void measureLantency(const String &payload)
     // 3. 按大端序拼成uint32_t
     REAL_TIME_MS = ((uint32_t)b0 << 24) | ((uint32_t)b1 << 16) | ((uint32_t)b2 << 8) | b3;
     CalcLantency();
+    
+    // 4. 触发时间同步
+    triggerTimeSynchronization();
 }
 
 uint32_t getRealTimeMs() {

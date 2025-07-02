@@ -185,6 +185,9 @@ static void update_LED_WS2812(void)
             if ((int32_t)(currentTime - nextSyncTime) >= 0) 
             {
                 // 到达同步点，LED首次点亮
+
+                printTime("LED_Sync_Time");    // 打印当前时间
+
                 ledState = true; 
                 setColor(currentState.color);
                 setBright(currentState.brightness);

@@ -29,32 +29,28 @@ static uint32_t g_last_known_lora_real_ms = 0;
 static uint32_t g_last_known_lora_latency_ms = 0;
 
 
-// 辅助函数：获取当前校准后的微秒时间（自系统上电且校准后的微秒数，且已在当天内归零）
-// 这个函数现在将包含自动校准逻辑
-static uint64_t getCalibratedMicros() {
-    // === 自动校准逻辑开始 ===
-    // 检查 LoRa 对时数据是否更新
-    uint32_t current_lora_real_ms = getRealTimeMs();
-    uint32_t current_lora_latency_ms = getLantency();
+// 外部调用以触发时间同步的函数
+// 这个函数现在是唯一会根据 LoRa 数据更新 g_current_day_offset_us 的地方。
+void triggerTimeSynchronization() {
+    uint32_t current_lora_real_ms = getRealTimeMs(); // 从LoRaHandler获取时间
+    uint32_t current_lora_latency_ms = getLantency(); // 从LoRaLantency获取延迟
 
     // 只有当 LoRa 真实时间或延迟数据发生变化时才进行校准
-    // 注意：如果 getRealTimeMs() 或 getLantency() 在短时间内被多次调用且值不变，
-    // 则不会重复校准，这有助于减少不必要的计算。
     if (current_lora_real_ms != g_last_known_lora_real_ms ||
         current_lora_latency_ms != g_last_known_lora_latency_ms)
     {
+        // 计算LoRa的“当天”微秒数
         uint64_t lora_day_micros = (uint64_t)(current_lora_real_ms - current_lora_latency_ms) * 1000ULL;
         lora_day_micros %= US_PER_DAY; // 确保 LoRa 时间也在一天周期内
 
+        // 获取当前esp_timer的“当天”微秒数
         uint64_t current_esp_timer_absolute_us = esp_timer_get_time();
         uint64_t current_esp_timer_day_micros = current_esp_timer_absolute_us % US_PER_DAY;
 
         // 计算当前esp_timer的“当天”微秒数与LoRa提供的“当天”微秒数之间的差
-        // 这个差值就是我们需要应用到g_current_day_offset_us上的调整量
         int64_t calculated_offset = (int64_t)lora_day_micros - (int64_t)current_esp_timer_day_micros;
 
         // 处理跨越半天周期（或午夜附近）的差异：
-        // 确保校准偏移量总是“最短路径”的调整，例如从23:59跳到00:01是+2分钟，而不是-23小时58分钟。
         if (calculated_offset > US_PER_DAY / 2) {
             calculated_offset -= US_PER_DAY;
         } else if (calculated_offset < -US_PER_DAY / 2) {
@@ -68,12 +64,17 @@ static uint64_t getCalibratedMicros() {
         g_last_known_lora_real_ms = current_lora_real_ms;
         g_last_known_lora_latency_ms = current_lora_latency_ms;
 
-        Serial.printf("[Time Sync Auto] Calibrated! LoRa day micros: %llu us, ESP timer day micros: %llu us, New effective offset: %lld us\n",
+        Serial.printf("[Time Sync] Calibrated by LoRa data update! LoRa day micros: %llu us, ESP timer day micros: %llu us, New effective offset: %lld us\n",
                       lora_day_micros, current_esp_timer_day_micros, g_current_day_offset_us);
+    } else {
+        // Serial.println("[Time Sync] LoRa data unchanged, no re-calibration needed."); // 可以根据需要打印
     }
-    // === 自动校准逻辑结束 ===
+}
 
 
+// 获取当前校准后的微秒时间
+// 这个函数现在只根据 g_current_day_offset_us 计算时间，不再触发 LoRa 数据的检查。
+static uint64_t getCalibratedMicros() {
     // 获取当前 esp_timer 的微秒数（绝对值）
     uint64_t current_esp_timer_absolute_us = esp_timer_get_time();
 
@@ -81,7 +82,6 @@ static uint64_t getCalibratedMicros() {
     int64_t effective_day_micros = (int64_t)(current_esp_timer_absolute_us % US_PER_DAY) + g_current_day_offset_us;
 
     // 确保结果在当天周期内（0 到 US_PER_DAY - 1）
-    // 处理可能因为偏移量导致超出边界的情况（例如，正偏移导致超过午夜，或负偏移导致小于零）
     while (effective_day_micros < 0) {
         effective_day_micros += US_PER_DAY;
     }
@@ -91,20 +91,7 @@ static uint64_t getCalibratedMicros() {
 }
 
 
-// 辅助函数：计算考虑环绕的时间差 (保持不变，因为是内部逻辑)
-// 注意：这个函数现在操作的是经过校准且每天归零的微秒时间
-// 可以在 LED_WS2812Module.cpp 中直接使用此逻辑，而无需复制整个函数
-// 或者，如果需要在 SyncTime 模块外部调用，可以将其声明在 SyncTime.h 中
-static uint64_t getSafeTimeDiff(uint64_t currentTime, uint64_t lastTime) {
-    if (currentTime >= lastTime) {
-        return currentTime - lastTime;
-    } else {
-        // 发生环绕：(最大值 - 上次时间) + 当前时间
-        return (US_PER_DAY - lastTime) + currentTime;
-    }
-}
-
-// 计算时间差，避免跨日时间回绕问题
+// 计算毫秒时间差，避免跨日时间回绕问题，此函数用于外部调用
 // currentTime必须是在总时间轴上晚于/将来于/大于lastTime的时间，最好是用当前时间与过去时间计算
 uint32_t getSafeTimeDiff_ms(uint32_t currentTime, uint32_t lastTime) {
     if (currentTime >= lastTime) {
@@ -156,6 +143,18 @@ uint64_t getTime_us() {
     return calibrated_micros;
 }
 
+void printTime(const String& msg){
+    Time_t visual_time = getCurrentTime(); // 每次调用getTime()都会触发getCalibratedMicros()
+    uint64_t seconds = getTime_s();
+    uint64_t milliseconds = getTime_ms();
+    uint64_t microseconds = getTime_us();
+
+    Serial.printf("[%s] Visual: %02d:%02d:%02d.%03d | Seconds: %llu s| Milliseconds: %llu ms| Microseconds: %llu us\n",
+                      msg.c_str(),
+                      visual_time.hours, visual_time.minutes, visual_time.seconds, visual_time.milliseconds,
+                      seconds, milliseconds, microseconds);
+}
+
 /*测试函数：循环打印当前时间到串口。
   每次打印间隔一个随机时间（1到10秒，毫秒级精度）。
   校准将由对 getRealTimeMs() 和 getLantency() 的值变化自动触发。
@@ -169,15 +168,8 @@ void SyncTime_Test_Task(void *pvParameters) {
     Serial.println("Automatic time calibration will occur when getRealTimeMs() or getLantency() values change.");
 
     while (1) {
-        Time_t visual_time = getCurrentTime(); // 每次调用getTime()都会触发getCalibratedMicros()，从而自动校准
-        uint64_t seconds = getTime_s();
-        uint64_t milliseconds = getTime_ms();
-        uint64_t microseconds = getTime_us();
-
-        Serial.printf("[TEST] Visual: %02d:%02d:%02d.%03d | Seconds: %llu s| Milliseconds: %llu ms| Microseconds: %llu us\n",
-                      visual_time.hours, visual_time.minutes, visual_time.seconds, visual_time.milliseconds,
-                      seconds, milliseconds, microseconds);
-
+        printTime("SyncTime_Test");
         vTaskDelay(pdMS_TO_TICKS(1000)); // 1-10秒随机延迟
     }
 }
+
