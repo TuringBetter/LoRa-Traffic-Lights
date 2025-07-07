@@ -14,6 +14,7 @@ static Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, DATA_PIN, NEO_GRB +
 
 static void setColor(uint32_t color);
 static void setBright(uint32_t brightness);
+static void setBlinkRate(uint32_t blinkRate);
 static void clearStrip();
 static void update_LED_WS2812(void);
 
@@ -30,6 +31,7 @@ void LED_WS2812_init()
     }
 
     setColor(COLOR_YELLOW);
+    // LED_WS2812_SetBlinkRate(30);
     setBright(10);
 }
 

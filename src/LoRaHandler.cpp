@@ -2,6 +2,7 @@
 #include "LED_WS2812Module.h"
 #include "LoRaLantency.h"
 #include "SyncTime.h"
+#include "LoRaModule.h"
 
 typedef void (*portHandler)(const String& payload);
 
@@ -12,6 +13,7 @@ static void setManner(const String& payload);
 static void setBrightness(const String& payload);
 static void setSwitch(const String& payload);
 static void setAll(const String& payload);
+static void joinGroup(const String& payload);
 
 static uint32_t REAL_TIME_MS = 0;
 
@@ -33,6 +35,7 @@ static const portHandler portHandlers[] =
     setBrightness,       // 13
     setSwitch,           // 14
     setAll,              // 15
+    joinGroup,           // 16
 };
 
 
@@ -197,4 +200,72 @@ void setAll(const String &payload)
     // if(manner == 0x00) delay(getDelay());
 
     LED_WS2812_SetState(new_led_control);
+}
+
+
+static void joinGroup(const String& payloadStr)
+{
+    // 预期二进制数据总长度：4 (DevAddr) + 16 (AppSKey) + 16 (NwkSKey) = 36 字节
+    const size_t EXPECTED_DATA_LEN_BYTES = 36;
+    uint8_t dataBytes[EXPECTED_DATA_LEN_BYTES]; // 用于存储解析后的二进制字节
+    size_t currentByteIndex = 0; // 用于跟踪当前填充的字节数
+
+    int currentHexStart = payloadStr.indexOf("0x"); // 查找第一个 "0x" 的位置
+
+    // 循环提取所有字节
+    while (currentHexStart >= 0 && currentByteIndex < EXPECTED_DATA_LEN_BYTES) {
+        // 确保能提取到两个十六进制字符 (例如 "0xAB" 需要4个字符长度)
+        if (currentHexStart + 4 <= payloadStr.length()) {
+            // 提取 "0xAB" 这样的子串，并转换为字节
+            uint8_t byteValue = strtol(payloadStr.substring(currentHexStart, currentHexStart + 4).c_str(), NULL, 16);
+            dataBytes[currentByteIndex++] = byteValue;
+        } else {
+            Serial.println("[LoRaHandler] Multicast Join: Incomplete hex byte found in payload string.");
+            break; // 数据不完整，退出循环
+        }
+        // 查找下一个 "0x"，从当前 0x 的结束位置 + 1 开始查找 (为了跳过空格或下一个0x)
+        currentHexStart = payloadStr.indexOf("0x", currentHexStart + 4); 
+    }
+
+    // 校验解析后的字节数是否符合预期
+    if (currentByteIndex != EXPECTED_DATA_LEN_BYTES) {
+        Serial.print("[LoRaHandler] Multicast Join: Parsed ");
+        Serial.print(currentByteIndex);
+        Serial.print(" bytes, expected ");
+        Serial.print(EXPECTED_DATA_LEN_BYTES);
+        Serial.println(" bytes. Payload parsing error due to incorrect length or format.");
+        return;
+    }
+
+    Serial.println("[LoRaHandler] Received valid Multicast Join Group Data.");
+
+    // 提取 DevAddr (4字节)
+    char devAddrHex[9]; // 4 bytes * 2 hex chars + null terminator
+    sprintf(devAddrHex, "%02X%02X%02X%02X", dataBytes[0], dataBytes[1], dataBytes[2], dataBytes[3]);
+    String devAddrStr = String(devAddrHex);
+
+    // 提取 AppSKey (16字节)
+    char appSKeyHex[33]; // 16 bytes * 2 hex chars + null terminator
+    for(int i = 0; i < 16; ++i) {
+        sprintf(&appSKeyHex[i*2], "%02X", dataBytes[4 + i]); // Offset: 4 (DevAddr)
+    }
+    String appSKeyStr = String(appSKeyHex);
+
+    // 提取 NwkSKey (16字节)
+    char nwkSKeyHex[33]; // 16 bytes * 2 hex chars + null terminator
+    for(int i = 0; i < 16; ++i) {
+        sprintf(&nwkSKeyHex[i*2], "%02X", dataBytes[20 + i]); // Offset: 4 (DevAddr) + 16 (AppSKey) = 20
+    }
+    String nwkSKeyStr = String(nwkSKeyHex);
+
+    Serial.print("[LoRaHandler] DevAddr: "); //
+    Serial.println(devAddrStr); //
+    Serial.print("[LoRaHandler] AppSKey: "); //
+    Serial.println(appSKeyStr); //
+    Serial.print("[LoRaHandler] NwkSKey: "); //
+    Serial.println(nwkSKeyStr); //
+
+    // 调用 LoRaModule.cpp 中定义的函数来添加多播组配置
+    addMuticast_IDF(devAddrStr, appSKeyStr, nwkSKeyStr);
+    Serial.println("[LoRaHandler] Multicast group configuration sent to LoRa module.");
 }

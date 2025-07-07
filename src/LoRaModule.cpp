@@ -46,15 +46,7 @@ void LoRa_init_IDF()
     uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
     uart_set_pin(UART_NUM_1, LoRa_TX, LoRa_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     delay(500);
-    joinNetwork_IDF(0);
-    delay(500);
     addMuticast_IDF("01651ed0", "e4449b09cca06c405a1c1509f7d9a40b", "aa97576782b624e2cbeb82f5f8ab066b");
-    delay(500);
-    joinNetwork_IDF(1);
-    delay(10000);
-    sendData("1");
-    delay(2000);
-
 }
 
 
@@ -80,7 +72,14 @@ void addMuticast_IDF(const String &DevAddr, const String &AppSKey, const String 
     command += "\n";  // 添加换行符
 
     // 使用ESP-IDF UART API发送数据
+    joinNetwork_IDF(0);
+    delay(500);
     uart_write_bytes(UART_NUM_1, command.c_str(), command.length());
+    delay(500);
+    joinNetwork_IDF(1);
+    delay(10000);
+    sendData("1");
+    delay(2000);
 }
 
 void sendData_IDF(const String &payload)

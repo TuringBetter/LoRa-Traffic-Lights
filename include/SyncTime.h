@@ -35,7 +35,7 @@ void triggerTimeSynchronization();
 // currentTime必须是在总时间轴上晚于/将来于/大于lastTime的时间，最好是用当前时间与过去时间计算
 uint32_t getSafeTimeDiff_ms(uint32_t currentTime, uint32_t lastTime);
 
-// 打印当前时间
+// 打印当前时间，传入打印头信息
 void printTime(const String& msg);
 
 //测试函数
