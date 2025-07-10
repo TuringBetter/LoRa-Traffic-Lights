@@ -1,6 +1,7 @@
 #include "LoRaModule.h"
 #include "LoRaHandler.h"
 #include "driver/uart.h"
+#include "NVSManager.h"
 // 内部局部变量
 static const uint64_t   LoRa_RX = 18;
 static const uint64_t   LoRa_TX = 17;
@@ -46,7 +47,21 @@ void LoRa_init_IDF()
     uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
     uart_set_pin(UART_NUM_1, LoRa_TX, LoRa_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     delay(500);
-    addMuticast_IDF("01651ed0", "e4449b09cca06c405a1c1509f7d9a40b", "aa97576782b624e2cbeb82f5f8ab066b");
+    String savedDevAddr, savedAppSKey, savedNwkSKey;
+    // 尝试从NVS加载组播信息
+    if (NVS_loadLoRaMulticast(savedDevAddr, savedAppSKey, savedNwkSKey)) { // 调用 NVSManager 中的加载函数
+        // 如果成功加载（NVS中有数据），则使用NVS中的数据进行组播配置
+        Serial.println("[LoRaModule] Successfully joined multicast group.");
+        // 调用 addMuticast_IDF 进行组播入组
+        addMuticast_IDF(savedDevAddr, savedAppSKey, savedNwkSKey);
+    }
+    else{
+        Serial.println("[LoRaModule] No saved multicast config found in NVS. Skipping multicast join.");
+        joinNetwork_IDF(1);
+        delay(10000);
+        sendData("1");
+        delay(2000);
+    }
 }
 
 
@@ -118,6 +133,7 @@ void sendData_Arduino(const String &payload)
 
 void receiveData()
 {
+    Serial.println("[LoRaModule] Receive.");
     static int parseState = 0;  // 0: 等待rx行, 1: 等待payload行
     static uint8_t currentPort = 0;
 /** *

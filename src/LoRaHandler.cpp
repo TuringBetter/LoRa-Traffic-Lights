@@ -3,6 +3,7 @@
 #include "LoRaLantency.h"
 #include "SyncTime.h"
 #include "LoRaModule.h"
+#include "NVSManager.h"
 
 typedef void (*portHandler)(const String& payload);
 
@@ -265,7 +266,14 @@ static void joinGroup(const String& payloadStr)
     Serial.print("[LoRaHandler] NwkSKey: "); //
     Serial.println(nwkSKeyStr); //
 
+    // 调用NVS管理器保存组播信息
+    if (NVS_saveLoRaMulticast(devAddrStr, appSKeyStr, nwkSKeyStr)) { // 调用 NVSManager 中的保存函数
+        Serial.println("[LoRaHandler] Multicast config successfully saved to NVS.");
+    } else {
+        Serial.println("[LoRaHandler] Failed to save multicast config to NVS.");
+    }
+
     // 调用 LoRaModule.cpp 中定义的函数来添加多播组配置
     addMuticast_IDF(devAddrStr, appSKeyStr, nwkSKeyStr);
-    Serial.println("[LoRaHandler] Multicast group configuration sent to LoRa module.");
+    Serial.println("[LoRaHandler] Successfully joined multicast group.");
 }
