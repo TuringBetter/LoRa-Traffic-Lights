@@ -42,18 +42,12 @@ static const portHandler portHandlers[] =
 
 void handlePayload(uint8_t port, const String& payload)
 {
-    // Serial.print("port: ");
-    // Serial.println(port);
-    // Serial.print("payload: ");
-    // Serial.println(payload);
-
     if(port < 0 || port >= sizeof(portHandlers) / sizeof(portHandlers[0])) return;
-
     portHandler cur_port_handler = portHandlers[port];
     if(cur_port_handler!=NULL)
     {
         cur_port_handler(payload);
-    }
+    } 
 }
 
 void measureLantency(const String &payload)
@@ -81,15 +75,17 @@ void measureLantency(const String &payload)
     // 4. 触发时间同步
     triggerTimeSynchronization();
 
-    // 5. 获取当前LED状态
+    // 5. 获取当前LED状态（这段是旧逻辑，新方案中不再需要LoRaHandler直接操作LED同步）
+    /*
     LED_Control_t currentState;
     LED_WS2812_GetState(currentState);
 
-    // 6. 如果当前处于闪烁模式，强制重新同步
+    // 如果当前处于闪烁模式，强制重新同步
     if (currentState.isBlinking) {
         LED_WS2812_SetBlink(false); 
         LED_WS2812_SetState(currentState); 
     }
+    */
 }
 
 uint32_t getRealTimeMs() {
@@ -98,7 +94,6 @@ uint32_t getRealTimeMs() {
 
 void setFreq(const String &payload)
 {
-    // delay(getDelay());
     uint8_t payload_freq = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
     switch(payload_freq) 
     {
@@ -110,6 +105,8 @@ void setFreq(const String &payload)
             break;
         case 0x78: // 120Hz
             LED_WS2812_SetBlinkRate(BLINK_RATE_120);
+            break;
+        default:
             break;
     }
 }
@@ -151,14 +148,13 @@ void setBrightness(const String &payload)
         uint8_t led_brightness = (uint8_t)((payload_brightness * 255) / 7000);
         
         LED_WS2812_SetBrightness(led_brightness);
-    }
+    } 
 }
 
 void setSwitch(const String &payload)
 {
-    /** */
     const static LED_Control_t LED_OFF = {false, 60, 0, COLOR_OFF};
-    const static LED_Control_t LED_ON  = {false, 30, 10, COLOR_YELLOW};
+    const static LED_Control_t LED_ON  = {false, 30, 10, COLOR_YELLOW}; // 初始黄灯常亮状态
     uint8_t status = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
     // 开启
     if(status == 0x01)
@@ -170,44 +166,41 @@ void setSwitch(const String &payload)
     {
         LED_WS2812_SetState(LED_OFF);
     }
-    /* */
 }
 
 void setAll(const String &payload)
 {
-    static LED_Control_t new_led_control;
+    static LED_Control_t new_led_control; // 使用静态，避免栈溢出风险
     String payloadStr = payload;
-    
+
     // 解析颜色（第1字节）
     int firstHex = payloadStr.indexOf("0x");
-    uint8_t color = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
-    new_led_control.color = (color == 0x00) ? COLOR_RED : COLOR_YELLOW;
+    uint8_t color_val = strtol(payloadStr.substring(firstHex, firstHex + 4).c_str(), NULL, 16);
+    new_led_control.color = (color_val == 0x00) ? COLOR_RED : COLOR_YELLOW;
 
     // 解析频率（第2字节）
     int secondHex = payloadStr.indexOf("0x", firstHex + 4);
-    uint8_t freq = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
-    switch(freq) 
+    uint8_t freq_val = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
+    switch(freq_val) 
     {
         case 0x1E: new_led_control.blinkRate = BLINK_RATE_30; break;
         case 0x3C: new_led_control.blinkRate = BLINK_RATE_60; break;
         case 0x78: new_led_control.blinkRate = BLINK_RATE_120; break;
+        default:  new_led_control.blinkRate = BLINK_RATE_60; break; 
     }
 
     // 解析亮度（第3-4字节）
     int thirdHex = payloadStr.indexOf("0x", secondHex + 4);
     int fourthHex = payloadStr.indexOf("0x", thirdHex + 4);
-    uint8_t high = strtol(payloadStr.substring(thirdHex, thirdHex + 4).c_str(), NULL, 16);
-    uint8_t low = strtol(payloadStr.substring(fourthHex, fourthHex + 4).c_str(), NULL, 16);
-    uint16_t brightness = (high << 8) | low;
-    // 将0~7000的亮度值映射到0~255
-    new_led_control.brightness = (uint8_t)((brightness * 255) / 7000);
+    uint8_t high_byte = strtol(payloadStr.substring(thirdHex, thirdHex + 4).c_str(), NULL, 16);
+    uint8_t low_byte = strtol(payloadStr.substring(fourthHex, fourthHex + 4).c_str(), NULL, 16);
+    uint16_t brightness_val = (high_byte << 8) | low_byte;
+    new_led_control.brightness = (uint8_t)((brightness_val * 255) / 7000);
 
     // 解析亮灯方式（第5字节）
     int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
-    uint8_t manner = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
-    new_led_control.isBlinking = (manner == 0x00);  // 0x00闪烁，0x01常亮
-
-    // if(manner == 0x00) delay(getDelay());
+    uint8_t manner_val = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
+    new_led_control.isBlinking = (manner_val == 0x00);  // 0x00闪烁，0x01常亮
 
     LED_WS2812_SetState(new_led_control);
 }
@@ -268,12 +261,12 @@ static void joinGroup(const String& payloadStr)
     }
     String nwkSKeyStr = String(nwkSKeyHex);
 
-    Serial.print("[LoRaHandler] DevAddr: "); //
-    Serial.println(devAddrStr); //
-    Serial.print("[LoRaHandler] AppSKey: "); //
-    Serial.println(appSKeyStr); //
-    Serial.print("[LoRaHandler] NwkSKey: "); //
-    Serial.println(nwkSKeyStr); //
+    Serial.print("[LoRaHandler] DevAddr: "); 
+    Serial.println(devAddrStr); 
+    Serial.print("[LoRaHandler] AppSKey: "); 
+    Serial.println(appSKeyStr); 
+    Serial.print("[LoRaHandler] NwkSKey: "); 
+    Serial.println(nwkSKeyStr); 
 
     // 调用NVS管理器保存组播信息
     if (NVS_saveLoRaMulticast(devAddrStr, appSKeyStr, nwkSKeyStr)) { // 调用 NVSManager 中的保存函数

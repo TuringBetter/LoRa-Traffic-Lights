@@ -1,6 +1,6 @@
 #include "LED_WS2812Module.h"
 #include "SyncTime.h"
-#include "RadarModule.h"
+#include "RadarModule.h" // 引入 RadarModule.h 以便访问其状态判断函数
 
 const int NUM_LEDS = 576; // LED数量
 const int DATA_PIN = 45;    // 选择你的GPIO引脚
@@ -10,11 +10,18 @@ TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
 TaskHandle_t        LED_Test_TaskHandle            =         NULL;
 SemaphoreHandle_t   ledControlMutex                =         NULL;
 
-// 初始 ledControl状态：不闪烁，闪烁频率30次/min，亮度10，颜色黄色，
-static LED_Control_t    ledControl; // LED 灯实际应用的参数，专供 update_LED_WS2812使用
-static LED_Control_t    normalState{false,30,10,COLOR_YELLOW};    // 始终保存 LED 灯的 normal状态，LoRa命令接收到这里
-static LED_Control_t    pendingNormalState; // 当雷达灯激活时，LoRa 命令会暂时缓存到这里
-static bool             pendingNormalStateUpdated = false;  // 标记是否有待处理的缓存命令
+// ledControl 这是实际由 update_LED_WS2812任务读取并控制硬件显示的变量
+static LED_Control_t    ledControl; 
+
+// normalState 这个变量始终保存 LoRa 命令所期望的 normal 状态
+// LoRaHandler 中的 Set函数会基于这个状态进行修改
+static LED_Control_t    normalState;
+
+// pendingNormalState当雷达灯激活时，LoRa 命令会暂时缓存到这里
+// pendingNormalStateUpdated标记 pendingNormalState是否待处理
+static LED_Control_t    pendingNormalState;
+static bool             pendingNormalStateUpdated = false;
+
 static Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 static void setColor(uint32_t color);
@@ -31,126 +38,127 @@ void LED_WS2812_init()
     
     // 检查互斥锁是否创建成功
     if (ledControlMutex == NULL) {
-        Serial.println("错误：无法创建LED控制互斥锁");
-        return;
+        Serial.println("[LED] 错误：无法创建LED控制互斥锁！系统可能不稳定。");
+        while(1) { vTaskDelay(pdMS_TO_TICKS(100)); } // 阻止系统继续运行
     }
+
+    // 初始时， normal和实际显示的灯光都设置为黄灯常亮
+    normalState = {
+        .isBlinking     = false,
+        .blinkRate      = BLINK_RATE_30,
+        .brightness     = 10,
+        .color          = COLOR_YELLOW
+    };
     ledControl = normalState;
-    setColor(normalState.color);
-    // LED_WS2812_SetBlinkRate(30);
-    setBright(normalState.brightness);
+
+    setColor(normalState.color); 
+    setBright(normalState.brightness); 
 }
 
+// 返回 LoRa 命令所认为的 normal状态。
 void LED_WS2812_GetState(LED_Control_t& curState)
 {
     if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
     {
-        // 如果有待处理的 LoRa 命令，返回该命令
         if (pendingNormalStateUpdated) {
-            curState = pendingNormalState;
-        }
-        else {  // 否则，返回当前状态
-            curState = normalState;
+            curState = pendingNormalState; // 如果有待处理的LoRa命令，返回它
+        } else {
+            curState = normalState; // 否则，返回当前已生效的 normal状态。
         }
         xSemaphoreGive(ledControlMutex);
     }
 }
 
+// 这是 LoRaHandler 修改 normal状态的主要入口。
+// 根据雷达灯是否激活来决定是立即应用还是缓存。
 void LED_WS2812_SetState(const LED_Control_t &newState)
 {
-    Serial.println("LED_WS2812_SetState() called");
     if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
     {
-        // 检查雷达灯是否激活
-        Serial.println("Radar_IsActiveOrExtending() called_2");
+        // 检查雷达灯是否激活 (雷达激活或处于延时状态)
         if (Radar_IsActiveOrExtending()) {
-            // 雷达灯激活时，将新的平时灯状态存储为待处理
-            Serial.println("Radar_IsActiveOrExtending() called_3");
+            // 雷达灯激活，将新的 normal状态（由 LoRa 命令指定）存储为待处理。
+            // 不影响当前的 ledControl (雷达灯继续显示)。
             pendingNormalState = newState;
-            pendingNormalStateUpdated = true;   //待处理标志
-            Serial.println("LoRa command received during Radar light, storing as pending.");
+            pendingNormalStateUpdated = true;   // 标记有待处理命令
         } else {
-            // 雷达灯未激活，立即应用新的平时灯状态
-            Serial.println("Radar_IsActiveOrExtending() called_4");
-            ledControl = newState;
-            pendingNormalStateUpdated = false;
-            Serial.println("LoRa command received, applying immediately.");
+            // 雷达灯未激活，立即应用新的 normal状态。
+            // 更新 normalState 和 ledControl。
+            normalState = newState; // 更新 normal状态
+            ledControl = normalState; // 直接应用到实际显示
+            pendingNormalStateUpdated = false; // 清除待处理标志
         }
         xSemaphoreGive(ledControlMutex);
     }
 }
 
-// 供 RadarModule 强制设置雷达灯状态 (绕过缓存逻辑)
+// 供 RadarModule 强制设置雷达灯状态
+// 直接修改 ledControl，确保雷达灯立即生效，不涉及 LoRa 命令的缓存
 void LED_WS2812_ForceSetState(const LED_Control_t& newState) {
     if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) {
-        ledControl = newState; // 直接设置 ledControl
+        ledControl = newState; // 直接设置 ledControl为雷达灯状态。
         xSemaphoreGive(ledControlMutex);
     }
 }
 
-// 供 RadarModule 在雷达灯结束时应用缓存或恢复之前状态
+// 供 RadarModule 在雷达灯结束时调用
+// 根据是否有缓存的 LoRa 命令来决定是应用该命令还是恢复到雷达激活前的 normal状态
 void LED_WS2812_ApplyPendingOrRestore(const LED_Control_t& restoreState) {
     if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) {
+        Serial.println("[LED] LED_WS2812_ApplyPendingOrRestore called.");
         if (pendingNormalStateUpdated) {
-            // 有待处理的LoRa指令时
-            normalState = pendingNormalState;   // 更新 normal状态
-            ledControl = normalState;           // 应用 normal状态
+            // 有待处理的LoRa指令
+            normalState = pendingNormalState; // 将缓存的 LoRa 命令设为新的 normal状态
+            ledControl = normalState;         // 将新的 normal状态应用到实际显示
             pendingNormalStateUpdated = false; // 清除待处理标志
+
         } else {
-            // 没有待处理的LoRa指令，恢复到雷达激活前的状态
-            ledControl = restoreState;
+            // 没有待处理的LoRa指令，恢复到雷达激活前的 normal状态。
+            normalState = restoreState; // 恢复 last_state 到 normalState
+            ledControl = normalState;   // 将恢复的 normal状态应用到实际显示
         }
         xSemaphoreGive(ledControlMutex);
     }
 }
 
+// LED_WS2812_SetColor 等函数现在会调用 LED_WS2812_GetState 获取 normal状态
+// 然后修改并传递给 LED_WS2812_SetState 这是确保 LoRa 命令正确缓存的关键
 void LED_WS2812_SetColor(uint32_t color)
 {
-    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
-    {
-        LED_Control_t curState;
-        LED_WS2812_GetState(curState); // 获取当前的 normal 状态
-        curState.color = color;
-        LED_WS2812_SetState(curState); // 传递修改后的 normal 状态
-    }
+    LED_Control_t curState;
+    LED_WS2812_GetState(curState); // 获取当前的 normal状态
+    curState.color = color;
+    LED_WS2812_SetState(curState); // 传递修改后的 normal状态
 }
 
 void LED_WS2812_SetBrightness(uint8_t brightness)
 {
-    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
-    {
-        LED_Control_t curState;
-        LED_WS2812_GetState(curState); // 获取当前的 normal 状态
-        curState.brightness = brightness;
-        LED_WS2812_SetState(curState); // 传递修改后的 normal 状态
-    }
+    LED_Control_t curState;
+    LED_WS2812_GetState(curState);
+    curState.brightness = brightness;
+    LED_WS2812_SetState(curState);
 }
 
 void LED_WS2812_SetBlink(bool isBlinking)
 {
-    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
-    {
-        LED_Control_t curState;
-        LED_WS2812_GetState(curState);
-        curState.isBlinking = isBlinking;
-        if (isBlinking) {
-            if (curState.blinkRate == 0) {
-                 curState.blinkRate = BLINK_RATE_60;
-            }
+    LED_Control_t curState;
+    LED_WS2812_GetState(curState);
+    curState.isBlinking = isBlinking;
+    if (isBlinking) {
+        if (curState.blinkRate == 0) {
+             curState.blinkRate = BLINK_RATE_60;
         }
-        LED_WS2812_SetState(curState);
     }
+    LED_WS2812_SetState(curState);
 }
 
 void LED_WS2812_SetBlinkRate(uint8_t blinkRate)
 {
-    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
-    {
-        LED_Control_t curState;
-        LED_WS2812_GetState(curState);
-        curState.isBlinking = true;
-        curState.blinkRate = blinkRate;
-        LED_WS2812_SetState(curState);
-    }
+    LED_Control_t curState;
+    LED_WS2812_GetState(curState);
+    curState.isBlinking = true;
+    curState.blinkRate = blinkRate;
+    LED_WS2812_SetState(curState);
 }
 
 void LED_WS2812_Task(void *pvParameters)
@@ -169,14 +177,24 @@ static void update_LED_WS2812(void)
     static bool ledState = true;            // 记录上一次的LED控制状态，确保初始值与ledControl的初始值匹配
     static bool isWaitingForSync = false;   // 标识初始同步是否完成
 
-    static LED_Control_t lastState{false,30,10,COLOR_YELLOW}; 
+    static LED_Control_t lastState; // 用于检测 ledControl 的变化，不再初始化为固定值
+    // 确保lastState在第一次运行时与ledControl同步，避免第一次needSync判断错误
+    static bool isFirstRun = true;
+    if(isFirstRun) {
+        if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) {
+            lastState = ledControl;
+            xSemaphoreGive(ledControlMutex);
+        }
+        isFirstRun = false;
+    }
+
 
     LED_Control_t currentState;
     
     // 获取当前LED控制状态，使用互斥锁确保线程安全
     if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
     {
-        currentState = ledControl;
+        currentState = ledControl; // 从 ledControl 获取当前实际要显示的LED状态
         xSemaphoreGive(ledControlMutex);
     } 
     else 
@@ -186,29 +204,22 @@ static void update_LED_WS2812(void)
     }
     
     // 检查闪烁状态是否改变
-    // 这个条件确保同步逻辑只在状态改变时执行一次，不影响后续循环闪烁的性能。
     bool needSync = false;       
 
-    // 首次进入闪烁
-    if (!lastState.isBlinking && currentState.isBlinking) 
+    if (currentState.isBlinking != lastState.isBlinking ||
+        currentState.blinkRate != lastState.blinkRate ||
+        currentState.color != lastState.color ||
+        currentState.brightness != lastState.brightness)
     {
-        needSync = true; 
-        printTime("needSync");
-    } 
-    // 已经在闪烁，但闪烁参数发生变化
-    else if (lastState.isBlinking && currentState.isBlinking) 
-    {
-        // 闪烁频率发生变化
-        if (lastState.blinkRate!= currentState.blinkRate)         
-            needSync = true;
+        needSync = true;
     }
 
-    if (needSync)  // 闪烁参数变化或首次进入闪烁模式
+    if (needSync)
     {
         uint32_t current_seconds = getTime_s();
 
         // 计算下一个偶数秒的毫秒时间作为闪烁的起始同步点。
-        if (current_seconds % 2 == 0) 
+        if (current_seconds % 2 == 0)
         {
             nextSyncTime = (current_seconds + 2) * 1000;
         } 
@@ -216,62 +227,37 @@ static void update_LED_WS2812(void)
         {
             nextSyncTime = (current_seconds + 1) * 1000;
         }
-        
         // 设定初始状态，等待同步，LED熄灭
-        isWaitingForSync = true; 
-        ledState = false; 
+        isWaitingForSync = true;
+        ledState = false;
         clearStrip();               // 确保LED在等待期间是灭的
         lastBlinkTime = 0;          // 重置 lastBlinkTime，表示尚未进入正常闪烁周期，以此判断是否在等待同步
-
-        /**** 添加串口输出：同步事件 ****
-        Serial.print("[Sync Event] Entered blinking mode at ");
-        Serial.print(current_time_ms);
-        Serial.print(" ms (");
-        Serial.print(current_seconds);
-        Serial.print("s). Next even second is ");
-        Serial.print(next_even_second_ms / 1000);
-        Serial.print("s. Sync time set to ");
-        Serial.print(lastBlinkTime);
-        Serial.println(" ms.");
-        /**/
     }
     
     if(currentState.isBlinking) 
     {
-        uint32_t currentTime = getTime_ms(); 
+        uint32_t currentTime = getTime_ms();
         uint32_t blinkInterval = (60000 / currentState.blinkRate) / 2;
         
         // 判断是否正在等待同步点
-        if (isWaitingForSync) // 如果nextSyncTime非0，说明有一个同步点需要等待
+        if (isWaitingForSync)
         {
-            // printTime("isWaitingForSync");
-            // 检查是否已达到或超过同步点
-            // 也可以用currentTime >= nextSyncTime更好理解，但带符号差值更严谨
-            if ((int32_t)(currentTime - nextSyncTime) >= 0) 
+            if ((int32_t)(currentTime - nextSyncTime) >= 0) // 使用带符号差值更严谨
             {
-                // 到达同步点，LED首次点亮
-
-                printTime("LED_Sync_Time");    // 打印当前时间
-
-                ledState = true; 
+                ledState = true;
                 setColor(currentState.color);
                 setBright(currentState.brightness);
                 
                 lastBlinkTime = nextSyncTime; // 将 lastBlinkTime 设置为实际点亮的时间
                 isWaitingForSync = false;    // 清除等待同步点
                 nextSyncTime = 0;            // 同步完成，清除 nextSyncTime 标志
-                
-                // Serial.printf("[Sync Achieved] LED ON at %u ms (Sync point: %u ms)\n", currentTime, lastBlinkTime);
             }
         }
-        else // 不在等待同步(nextSyncTime为0)，执行常规闪烁逻辑
+        else // 不在等待同步，执行常规闪烁逻辑
         {
-            // 只有当 lastBlinkTime被有效设置过（即不是初始的0），才计算时间差
-            // 首次点亮后lastBlinkTime就会被设置为 currentTime
             if (lastBlinkTime != 0 && getSafeTimeDiff_ms(currentTime, lastBlinkTime) >= blinkInterval)
             {
                 ledState = !ledState; // 翻转LED状态
-                // lastBlinkTime = currentTime; // 更新 lastBlinkTime 为实际切换的时间
                 
                 while (getSafeTimeDiff_ms(currentTime, lastBlinkTime) >= blinkInterval) {
                     lastBlinkTime += blinkInterval;
@@ -292,24 +278,23 @@ static void update_LED_WS2812(void)
     else // 常亮模式 (currentState.isBlinking == false)
     {
         // 只有当LED状态（常亮/闪烁状态、颜色、亮度）发生变化时才更新LED。
-        // 这确保了从闪烁模式切换回常亮时，LED能立即更新。
-        if (lastState.isBlinking != currentState.isBlinking || // 从闪烁切换到常亮，或常亮参数改变
+        if (lastState.isBlinking != currentState.isBlinking ||
             lastState.color      != currentState.color     || 
             lastState.brightness != currentState.brightness )
         {
             setColor(currentState.color);
             setBright(currentState.brightness);
+            Serial.printf("[LED_Task] Changed to Steady state: (isBlink=%d, Bright=%d, Color=%06X).\n",
+                          currentState.isBlinking, currentState.brightness, currentState.color); // 调试输出
         }
         
-        // 当切换到常亮模式时，清除闪烁相关的状态
-        // 这样下次再进入闪烁模式时，会重新触发同步逻辑
-        isWaitingForSync = false;   // 清除等待同步点（这一行是冗余，也可以删）
-        lastBlinkTime = 0;          // 清除上次闪烁时间，确保下次闪烁重新同步
-        ledState = true;            // 常亮模式下LED是亮的
+        isWaitingForSync = false;
+        lastBlinkTime = 0;
+        ledState = true;
     }
     
-    // 在函数末尾，更新 lastState 为当前的 currentState，为下一次循环做准备
-    lastState = currentState;
+    lastState = currentState; // 更新 lastState 为当前的 currentState
+    strip.show(); // 更新LED灯带
 }
 
 void LED_StatusChange_Task(void *pvParameters)
@@ -358,7 +343,6 @@ void LED_StatusChange_Task(void *pvParameters)
                 break;
         }
         
-        // 使用新的接口函数更新状态
         LED_WS2812_SetState(newState);
         
         state = (state + 1) % 6;
@@ -367,23 +351,23 @@ void LED_StatusChange_Task(void *pvParameters)
 }
 
 
-void setColor(uint32_t color) {
+static void setColor(uint32_t color) {
     for (int i = 0; i < strip.numPixels(); i++) {
         strip.setPixelColor(i, color);
     }
-    strip.show();
+    strip.show(); // 移到 update_LED_WS2812 中集中控制
 }
 
-void setBright(uint32_t brightness) {
+static void setBright(uint32_t brightness) {
     strip.setBrightness(brightness);
-    strip.show();
+    strip.show(); // 移到 update_LED_WS2812 中集中控制
 }
 
-void clearStrip() {
+static void clearStrip() {
     for (int i = 0; i < strip.numPixels(); i++) {
         strip.setPixelColor(i, strip.Color(0, 0, 0));
     }
-    strip.show();
+    strip.show(); // 移到 update_LED_WS2812 中集中控制
 }
 
 /*测试函数，用于测试LED状态切换*/
@@ -452,4 +436,3 @@ void LED_Test_Task(void *pvParameters)
         }
     }
 }
-/**/
