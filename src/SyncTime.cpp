@@ -1,7 +1,7 @@
 #include "SyncTime.h"
-#include "LoRaHandler.h" // 假设 LoRaHandler.h 提供了 getRealTimeMs()
-#include "LoRaLantency.h" // 假设 LoRaLantency.h 提供了 getLantency()
-#include <stdlib.h> // For random(), srandom()
+#include "LoRaHandler.h" 
+#include "LoRaLantency.h"
+#include "LED_WS2812Module.h"
 
 // 定义一天总共有多少毫秒
 // 1天 = 24小时 * 60分钟/小时 * 60秒/分钟 * 1000毫秒/秒 = 86,400,000 毫秒
@@ -63,9 +63,7 @@ void triggerTimeSynchronization() {
         // 更新上次已知的 LoRa 数据，避免重复校准
         g_last_known_lora_real_ms = current_lora_real_ms;
         g_last_known_lora_latency_ms = current_lora_latency_ms;
-
-        Serial.printf("[Time Sync] Calibrated by LoRa data update! LoRa day micros: %llu us, ESP timer day micros: %llu us, New effective offset: %lld us\n",
-                      lora_day_micros, current_esp_timer_day_micros, g_current_day_offset_us);
+        // Serial.printf("[Time Sync] Calibrated by LoRa data update! LoRa day micros: %llu us, ESP timer day micros: %llu us, New effective offset: %lld us\n",lora_day_micros, current_esp_timer_day_micros, g_current_day_offset_us);
     } else {
         // Serial.println("[Time Sync] LoRa data unchanged, no re-calibration needed."); // 可以根据需要打印
     }
@@ -92,7 +90,7 @@ static uint64_t getCalibratedMicros() {
 
 
 // 计算毫秒时间差，避免跨日时间回绕问题，此函数用于外部调用
-// currentTime必须是在总时间轴上晚于/将来于/大于lastTime的时间，最好是用当前时间与过去时间计算
+// 前者currentTime必须是在总时间轴上晚于/将来于/大于后者lastTime的时间，最好是用当前时间与过去时间计算
 uint32_t getSafeTimeDiff_ms(uint32_t currentTime, uint32_t lastTime) {
     if (currentTime >= lastTime) {
         return currentTime - lastTime;

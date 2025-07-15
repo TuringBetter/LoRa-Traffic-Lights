@@ -46,3 +46,7 @@ void LED_WS2812_SetBrightness(uint8_t brightness);
 void LED_WS2812_SetBlink(bool isBlinking);
 void LED_WS2812_SetBlinkRate(uint8_t blinkRate);
 void LED_WS2812_GetState(LED_Control_t& curState);  // 获取当前LED状态
+
+// 新增：供 RadarModule 调用的函数
+void LED_WS2812_ForceSetState(const LED_Control_t& newState); // 雷达激活时强制设置
+void LED_WS2812_ApplyPendingOrRestore(const LED_Control_t& restoreState); // 雷达结束时应用缓存或恢复

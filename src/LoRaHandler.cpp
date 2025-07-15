@@ -42,17 +42,16 @@ static const portHandler portHandlers[] =
 
 void handlePayload(uint8_t port, const String& payload)
 {
+    // Serial.print("port: ");
+    // Serial.println(port);
+    // Serial.print("payload: ");
+    // Serial.println(payload);
+
     if(port < 0 || port >= sizeof(portHandlers) / sizeof(portHandlers[0])) return;
 
     portHandler cur_port_handler = portHandlers[port];
     if(cur_port_handler!=NULL)
     {
-        /*
-        Serial.print("port: ");
-        Serial.println(port);
-        Serial.print("payload: ");
-        Serial.println(payload);
-        */
         cur_port_handler(payload);
     }
 }
@@ -81,6 +80,16 @@ void measureLantency(const String &payload)
     
     // 4. 触发时间同步
     triggerTimeSynchronization();
+
+    // 5. 获取当前LED状态
+    LED_Control_t currentState;
+    LED_WS2812_GetState(currentState);
+
+    // 6. 如果当前处于闪烁模式，强制重新同步
+    if (currentState.isBlinking) {
+        LED_WS2812_SetBlink(false); 
+        LED_WS2812_SetState(currentState); 
+    }
 }
 
 uint32_t getRealTimeMs() {

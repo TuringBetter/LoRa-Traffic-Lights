@@ -5,6 +5,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
+#include <stdlib.h> 
 
 extern TaskHandle_t SyncTime_Test_TaskHandle;
 
