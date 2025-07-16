@@ -46,6 +46,7 @@ void LoRa_init_IDF()
     uart_param_config(UART_NUM_1, &uart_config);
     uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
     uart_set_pin(UART_NUM_1, LoRa_TX, LoRa_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    
     delay(500);
     String savedDevAddr, savedAppSKey, savedNwkSKey;
     // 尝试从NVS加载组播信息

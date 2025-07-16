@@ -15,6 +15,7 @@ static void setBrightness(const String& payload);
 static void setSwitch(const String& payload);
 static void setAll(const String& payload);
 static void joinGroup(const String& payload);
+static void setAccMonitor(const String& payload);
 
 static uint32_t REAL_TIME_MS = 0;
 
@@ -37,11 +38,18 @@ static const portHandler portHandlers[] =
     setSwitch,           // 14
     setAll,              // 15
     joinGroup,           // 16
+    setAccMonitor,       // 17
+    NULL
 };
 
 
 void handlePayload(uint8_t port, const String& payload)
 {
+    Serial.print("port: ");
+    Serial.println(port);
+    Serial.print("payload: ");
+    Serial.println(payload);
+
     if(port < 0 || port >= sizeof(portHandlers) / sizeof(portHandlers[0])) return;
     portHandler cur_port_handler = portHandlers[port];
     if(cur_port_handler!=NULL)
@@ -278,4 +286,9 @@ static void joinGroup(const String& payloadStr)
     // 调用 LoRaModule.cpp 中定义的函数来添加多播组配置
     addMuticast_IDF(devAddrStr, appSKeyStr, nwkSKeyStr);
     Serial.println("[LoRaHandler] Successfully joined multicast group.");
+}
+
+static void setAccMonitor(const String &payload)
+{
+    Serial.println("setAccMonitor");
 }

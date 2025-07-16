@@ -10,7 +10,8 @@ static const uint32_t   COLLISION_TIMEOUT   = 2000;   // 碰撞超时时间（�
 static       bool       _collisionDetected  = false;
 static       uint32_t   _lastCollisionDetectionTime=0;
 
-TaskHandle_t AccTaskHandle     = NULL;
+TaskHandle_t AccTaskHandle          = NULL;
+TaskHandle_t AccMonitorTaskHandle   = NULL;
 
 static void writeRegister(uint8_t reg, uint8_t value);
 static void processDate(int16_t x, int16_t y, int16_t z);
@@ -90,4 +91,9 @@ void accelerometerTask(void* pvParameters)
         // 任务延时
         vTaskDelay(pdMS_TO_TICKS(100));  // 100ms
     }
+}
+
+void accMonitorTask(void *pvParameters)
+{
+    
 }

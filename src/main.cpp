@@ -17,12 +17,12 @@ void setup() {
 /** */
     NVS_init();
     LoRa_init_IDF();
-    Button_init();
-    // Acc_init();
-    Radar_init();
-    LED_WS2812_init();
+    // Button_init();
+    Acc_init();
+    // Radar_init();
+    // LED_WS2812_init();
 
-/** */
+/** *
     // 创建按键检测任务
     xTaskCreatePinnedToCore(
         buttonTask,        // 任务函数
@@ -34,7 +34,7 @@ void setup() {
         1                  // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
   // 创建雷达检测任务
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
@@ -81,7 +81,7 @@ void setup() {
         1                       // 运行核心 (1 = 核心1)
     );
 /** *
-/** */
+/** *
   // 创建延迟测量任务
     xTaskCreatePinnedToCore(
         latencyTask,           // 任务函数
@@ -92,7 +92,7 @@ void setup() {
         &latencyTaskHandle,    // 任务句柄
         1                      // 运行核心 (1 = 核心1)
     );
-/** */
+/** *
     // 创建LED控制任务
     xTaskCreatePinnedToCore(
         LED_WS2812_Task,          // 任务函数
