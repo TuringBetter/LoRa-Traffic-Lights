@@ -63,7 +63,7 @@ void triggerTimeSynchronization() {
         // 更新上次已知的 LoRa 数据，避免重复校准
         g_last_known_lora_real_ms = current_lora_real_ms;
         g_last_known_lora_latency_ms = current_lora_latency_ms;
-        // Serial.printf("[Time Sync] Calibrated by LoRa data update! LoRa day micros: %llu us, ESP timer day micros: %llu us, New effective offset: %lld us\n",lora_day_micros, current_esp_timer_day_micros, g_current_day_offset_us);
+        Serial.printf("[Time Sync] Calibrated by LoRa data update! LoRa day micros: %llu us, ESP timer day micros: %llu us, New effective offset: %lld us\n",lora_day_micros, current_esp_timer_day_micros, g_current_day_offset_us);
     } else {
         // Serial.println("[Time Sync] LoRa data unchanged, no re-calibration needed."); // 可以根据需要打印
     }

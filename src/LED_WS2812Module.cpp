@@ -25,6 +25,9 @@ static LED_Control_t    normalState;
 static LED_Control_t    pendingNormalState;
 static bool             pendingNormalStateUpdated = false;
 
+static LED_Control_t prevActualYellowStateInit; // 临时变量用于初始化
+static LED_Control_t prevActualRedStateInit;    // 临时变量用于初始化
+
 
 static Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -45,7 +48,7 @@ void LED_WS2812_init()
     pinMode(LED_POWER_GPIO_PIN, OUTPUT);
     // 使能 LED
     LED_WS2812_switch(1);
-    delay(10);
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     strip.begin();
     // 创建互斥锁
@@ -67,6 +70,11 @@ void LED_WS2812_init()
     actualYellowState = normalState; // 黄区初始为黄灯常亮
     actualRedState = {false, 30, 0, COLOR_OFF}; // 红区初始为熄灭
     pendingNormalStateUpdated = false; // 初始时，没有待处理的LoRa指令
+
+    // 初始化 prev 状态，使其与初始的 actualXState 相同
+    // 这样在第一次 update_LED_WS2812 调用时，不会错误地触发 stateChanged
+    prevActualYellowStateInit = actualYellowState;
+    prevActualRedStateInit = actualRedState;
 
     // 清空所有灯，确保初始状态
     strip.clear();
@@ -259,13 +267,6 @@ static void update_LED_WS2812(void)
         return;
     }
 
-    // 初始化 prev 状态在第一次运行时
-    if (isFirstRunUpdate) {
-        prevActualYellowState = currentActualYellowState;
-        prevActualRedState = currentActualRedState;
-        isFirstRunUpdate = false;
-    }
-
     uint32_t currentTime = getTime_ms(); // 获取当前时间
 
     // --- 处理黄色区域 ---
@@ -388,12 +389,13 @@ void LED_WS2812_switch(bool enable){
         Serial.println("[LED]Switch on");
     }
     else if(enable == 0){
-        delay(10);
+        vTaskDelay(pdMS_TO_TICKS(10));
         // 拉低GPIO40，关闭LED灯使能
         digitalWrite(LED_POWER_GPIO_PIN, LOW);
         Serial.println("[LED]Switch off");
     }
 }
+
 
 void LED_StatusChange_Task(void *pvParameters)
 {
