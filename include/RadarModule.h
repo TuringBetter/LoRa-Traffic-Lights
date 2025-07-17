@@ -11,5 +11,8 @@ void radarTask(void *pvParameters);
 
 void Radar_init();
 
+// 新增：雷达模块是否已启用标志
+extern bool radarModuleEnabled;
+
 // 判断雷达是否激活或处于延长闪烁状态的函数
 extern bool Radar_IsActiveOrExtending();

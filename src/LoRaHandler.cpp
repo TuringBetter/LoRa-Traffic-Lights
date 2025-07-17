@@ -153,18 +153,16 @@ void setBrightness(const String &payload)
 
 void setSwitch(const String &payload)
 {
-    const static LED_Control_t LED_OFF = {false, 60, 0, COLOR_OFF};
-    const static LED_Control_t LED_ON  = {false, 30, 10, COLOR_YELLOW}; // 初始黄灯常亮状态
     uint8_t status = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
     // 开启
     if(status == 0x01)
     {
-        LED_WS2812_SetState(LED_ON);
+        LED_WS2812_switch(1);
     }     
     // 关闭
     else
     {
-        LED_WS2812_SetState(LED_OFF);
+        LED_WS2812_switch(0);
     }
 }
 

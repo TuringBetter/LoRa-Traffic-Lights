@@ -1,3 +1,4 @@
+#pragma once
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 #include <freertos/FreeRTOS.h>
@@ -23,6 +24,12 @@ typedef struct
 #define BLINK_RATE_60      60
 #define BLINK_RATE_120     120
 
+// LED数量和分区定义
+#define NUM_LEDS            256       // 总LED数量
+#define NUM_YELLOW_LEDS     128       // 黄色区域LED数量 (1-128)
+#define NUM_RED_LEDS        128       // 红色区域LED数量 (129-256)
+#define YELLOW_LED_START_IDX 0        // 黄色区域起始索引 (0-127)
+#define RED_LED_START_IDX   128       // 红色区域起始索引 (128-255)
 
 // 初始化函数
 void LED_WS2812_init();
@@ -46,7 +53,8 @@ void LED_WS2812_SetBrightness(uint8_t brightness);
 void LED_WS2812_SetBlink(bool isBlinking);
 void LED_WS2812_SetBlinkRate(uint8_t blinkRate);
 void LED_WS2812_GetState(LED_Control_t& curState);  // 获取当前LED状态
+void LED_WS2812_switch(bool enable);
 
-// 新增：供 RadarModule 调用的函数
+// 供 RadarModule 调用的函数
 void LED_WS2812_ForceSetState(const LED_Control_t& newState); // 雷达激活时强制设置
-void LED_WS2812_ApplyPendingOrRestore(const LED_Control_t& restoreState); // 雷达结束时应用缓存或恢复
+void LED_WS2812_ApplyPendingOrRestore(); // 雷达结束时应用缓存或恢复

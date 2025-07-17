@@ -19,7 +19,7 @@ void setup() {
     LoRa_init_IDF();
     Button_init();
     // Acc_init();
-    Radar_init();
+    // Radar_init();
     LED_WS2812_init();
 
 /** */
@@ -34,7 +34,7 @@ void setup() {
         1                  // 运行核心 (1 = 核心1)
     );
 
-/** */
+/** *
   // 创建雷达检测任务
     xTaskCreatePinnedToCore(
         radarTask,           // 任务函数
