@@ -95,5 +95,10 @@ void accelerometerTask(void* pvParameters)
 
 void accMonitorTask(void *pvParameters)
 {
+    while (true)
+    {
+        Serial.println("accMonitorTask");
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
     
 }

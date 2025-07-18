@@ -4,6 +4,7 @@
 #include "SyncTime.h"
 #include "LoRaModule.h"
 #include "NVSManager.h"
+#include "AccelerometerModule.h"
 
 typedef void (*portHandler)(const String& payload);
 
@@ -45,11 +46,12 @@ static const portHandler portHandlers[] =
 
 void handlePayload(uint8_t port, const String& payload)
 {
+    /*
     Serial.print("port: ");
     Serial.println(port);
     Serial.print("payload: ");
     Serial.println(payload);
-
+    */
     if(port < 0 || port >= sizeof(portHandlers) / sizeof(portHandlers[0])) return;
     portHandler cur_port_handler = portHandlers[port];
     if(cur_port_handler!=NULL)
@@ -290,5 +292,50 @@ static void joinGroup(const String& payloadStr)
 
 static void setAccMonitor(const String &payload)
 {
-    Serial.println("setAccMonitor");
+    // 提取 enable (1字节)
+    uint8_t enable = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
+    // 开启 加速度检测
+    if(enable == 0x01)
+    {
+        // 只允许创建一次任务
+        if (AccMonitorTaskHandle == NULL) 
+        {
+            BaseType_t result = xTaskCreatePinnedToCore(
+                accMonitorTask,             // 任务函数
+                "AccMonitorTask",           // 任务名称
+                4096,                       // 堆栈大小
+                NULL,                       // 任务参数
+                1,                          // 任务优先级
+                &AccMonitorTaskHandle,      // 任务句柄
+                1                           // 运行核心 (1 = 核心1)
+            );
+            if (result == pdPASS) 
+            {
+                Serial.println("[LoRaHandler] 加速度监测任务已启动");
+            }
+            else 
+            {
+                AccMonitorTaskHandle = NULL;
+                Serial.println("[LoRaHandler] 加速度监测任务启动失败");
+            }
+        }
+        else 
+        {
+            Serial.println("[LoRaHandler] 加速度监测任务已在运行，无需重复启动");
+        }
+    }
+    else
+    {
+        // 关闭加速度检测任务
+        if (AccMonitorTaskHandle != NULL)
+        {
+            vTaskDelete(AccMonitorTaskHandle);
+            AccMonitorTaskHandle = NULL;
+            Serial.println("[LoRaHandler] 加速度监测任务已关闭");
+        }
+        else
+        {
+            Serial.println("[LoRaHandler] 加速度监测任务未运行，无需关闭");
+        }
+    }
 }
