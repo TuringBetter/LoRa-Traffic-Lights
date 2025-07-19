@@ -298,30 +298,34 @@ static void setAccMonitor(const String &payload)
     if(enable == 0x01)
     {
         // 只允许创建一次任务
-        if (AccMonitorTaskHandle == NULL) 
+        if (AccMonitorTaskHandle != NULL) 
         {
-            BaseType_t result = xTaskCreatePinnedToCore(
-                accMonitorTask,             // 任务函数
-                "AccMonitorTask",           // 任务名称
-                4096,                       // 堆栈大小
-                NULL,                       // 任务参数
-                1,                          // 任务优先级
-                &AccMonitorTaskHandle,      // 任务句柄
-                1                           // 运行核心 (1 = 核心1)
-            );
-            if (result == pdPASS) 
-            {
-                Serial.println("[LoRaHandler] 加速度监测任务已启动");
-            }
-            else 
-            {
-                AccMonitorTaskHandle = NULL;
-                Serial.println("[LoRaHandler] 加速度监测任务启动失败");
-            }
+            Serial.println("[LoRaHandler] 加速度监测任务已在运行，无需重复启动");
+            return ;
+        }
+        // 暂停当前运行的加速度任务
+        if(AccTaskHandle != NULL)
+        {
+            vTaskSuspend(AccTaskHandle);
+        }
+
+        BaseType_t result = xTaskCreatePinnedToCore(
+            accMonitorTask,             // 任务函数
+            "AccMonitorTask",           // 任务名称
+            4096,                       // 堆栈大小
+            NULL,                       // 任务参数
+            1,                          // 任务优先级
+            &AccMonitorTaskHandle,      // 任务句柄
+            1                           // 运行核心 (1 = 核心1)
+        );
+        if (result == pdPASS) 
+        {
+            Serial.println("[LoRaHandler] 加速度监测任务已启动");
         }
         else 
         {
-            Serial.println("[LoRaHandler] 加速度监测任务已在运行，无需重复启动");
+            AccMonitorTaskHandle = NULL;
+            Serial.println("[LoRaHandler] 加速度监测任务启动失败");
         }
     }
     else
@@ -331,6 +335,13 @@ static void setAccMonitor(const String &payload)
         {
             vTaskDelete(AccMonitorTaskHandle);
             AccMonitorTaskHandle = NULL;
+            
+        // 恢复加速度测量任务
+        if(AccTaskHandle != NULL)
+        {
+            vTaskResume(AccTaskHandle);
+        }
+
             Serial.println("[LoRaHandler] 加速度监测任务已关闭");
         }
         else
