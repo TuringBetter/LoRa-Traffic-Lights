@@ -9,6 +9,12 @@
 
 extern TaskHandle_t SyncTime_Test_TaskHandle;
 
+// 声明互斥锁
+extern SemaphoreHandle_t syncTimeMutex;
+
+// SyncTime 模块的初始化函数
+void SyncTime_init();
+
 // 时间结构体，用于getTime()的直观可视化输出
 typedef struct {
     uint8_t  hours;

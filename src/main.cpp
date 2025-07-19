@@ -21,6 +21,7 @@ void setup() {
     //Acc_init();
     Radar_init();
     LED_WS2812_init();
+    SyncTime_init();
 
 /** */
     // 创建按键检测任务

@@ -13,6 +13,9 @@
 
 TaskHandle_t SyncTime_Test_TaskHandle = NULL;
 
+// 定义互斥锁
+SemaphoreHandle_t syncTimeMutex = NULL; // 初始化为NULL
+
 /*
 * 用于存储 esp_timer_get_time() 当前值与“当天”实际时间之间的同步偏移量（微秒）。
 * 这个偏移量会相对较小，反映的是esp_timer相对于当天0点0分0秒的偏差。
@@ -28,6 +31,17 @@ static uint32_t g_last_known_lora_real_ms = 0;
 // 记录上次同步时 LoRa 返回的原始 getLantency() 值，用于检测其是否更新
 static uint32_t g_last_known_lora_latency_ms = 0;
 
+// SyncTime 模块的初始化函数
+void SyncTime_init() {
+    if (syncTimeMutex == NULL) { // 避免重复创建
+        syncTimeMutex = xSemaphoreCreateMutex(); //
+        if (syncTimeMutex == NULL) {
+            Serial.println("[SyncTime] 错误：无法创建时间同步互斥锁！系统可能不稳定。"); //
+            while(1) { vTaskDelay(pdMS_TO_TICKS(100)); } // 阻止系统继续运行
+        }
+        Serial.println("[SyncTime] 时间同步互斥锁创建成功。"); //
+    }
+}
 
 // 外部调用以触发时间同步的函数
 // 这个函数现在是唯一会根据 LoRa 数据更新 g_current_day_offset_us 的地方。
@@ -57,8 +71,13 @@ void triggerTimeSynchronization() {
             calculated_offset += US_PER_DAY;
         }
 
-        // 将新的偏移量应用到总的偏移量上
-        g_current_day_offset_us = calculated_offset; // 直接更新为计算出的当前偏差
+        // 使用互斥锁保护对 g_current_day_offset_us 的写入
+        if (syncTimeMutex != NULL && xSemaphoreTake(syncTimeMutex, portMAX_DELAY) == pdTRUE) { //
+            g_current_day_offset_us = calculated_offset; //
+            xSemaphoreGive(syncTimeMutex); //
+        } else {
+            Serial.println("[SyncTime] 警告：triggerTimeSynchronization 无法获取互斥锁！"); //
+        }
 
         // 更新上次已知的 LoRa 数据，避免重复校准
         g_last_known_lora_real_ms = current_lora_real_ms;
@@ -76,8 +95,19 @@ static uint64_t getCalibratedMicros() {
     // 获取当前 esp_timer 的微秒数（绝对值）
     uint64_t current_esp_timer_absolute_us = esp_timer_get_time();
 
-    // 提取 esp_timer 的“当天”微秒数，然后加上校准偏移量
-    int64_t effective_day_micros = (int64_t)(current_esp_timer_absolute_us % US_PER_DAY) + g_current_day_offset_us;
+    int64_t current_offset; //
+
+    // 使用互斥锁保护对 g_current_day_offset_us 的读取
+    if (syncTimeMutex != NULL && xSemaphoreTake(syncTimeMutex, portMAX_DELAY) == pdTRUE) { //
+        current_offset = g_current_day_offset_us; //
+        xSemaphoreGive(syncTimeMutex); //
+    } else {
+        Serial.println("[SyncTime] 警告：getCalibratedMicros 无法获取互斥锁！"); //
+        current_offset = g_current_day_offset_us; // 在无法获取锁时，仍然尝试读取当前值，但这可能是竞态条件下的旧值或部分更新值
+    }
+
+    int64_t effective_day_micros = (int64_t)(current_esp_timer_absolute_us % US_PER_DAY) + current_offset; //
+
 
     // 确保结果在当天周期内（0 到 US_PER_DAY - 1）
     while (effective_day_micros < 0) {
