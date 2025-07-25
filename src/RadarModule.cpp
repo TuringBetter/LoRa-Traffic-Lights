@@ -115,7 +115,6 @@ static void processRadarData() {
     {
         if ((xTaskGetTickCount() - vehicleLeaveTime) >= pdMS_TO_TICKS(LED_ON_DELAY))
         {
-            // 调用 LED_WS2812_ApplyPendingOrRestore (现在没有参数)
             LED_WS2812_ApplyPendingOrRestore(); 
 
             // 修正：在修改 waitingForDelay 时也使用互斥锁

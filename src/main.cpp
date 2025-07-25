@@ -127,7 +127,8 @@ void setup() {
         0                        // 运行核心 (0 = 核心0，为了负载均衡可以放到另一个核心)
     );
 /** */
-  // 删除setup任务，因为不再需要
+    // vTaskDelay(pdMS_TO_TICKS(15000));
+    // 删除setup任务，因为不再需要
     vTaskDelete(NULL);
 /** */
 

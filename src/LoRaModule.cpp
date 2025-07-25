@@ -237,7 +237,7 @@ void receiveData_IDF()
                 else if (parseState == 1 && response.indexOf("0x") >= 0) 
                 {
                     parseState = 0;
-                    /**
+                    /**/
                     Serial.print("port   : ");
                     Serial.println(currentPort);
                     Serial.print("payload: ");

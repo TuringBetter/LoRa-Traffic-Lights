@@ -82,7 +82,7 @@ void triggerTimeSynchronization() {
         // 更新上次已知的 LoRa 数据，避免重复校准
         g_last_known_lora_real_ms = current_lora_real_ms;
         g_last_known_lora_latency_ms = current_lora_latency_ms;
-        Serial.printf("[Time Sync] Calibrated by LoRa data update! LoRa day micros: %llu us, ESP timer day micros: %llu us, New effective offset: %lld us\n",lora_day_micros, current_esp_timer_day_micros, g_current_day_offset_us);
+        // Serial.printf("[Time Sync] Calibrated by LoRa data update! LoRa day micros: %llu us, ESP timer day micros: %llu us, New effective offset: %lld us\n",lora_day_micros, current_esp_timer_day_micros, g_current_day_offset_us);
     } else {
         // Serial.println("[Time Sync] LoRa data unchanged, no re-calibration needed."); // 可以根据需要打印
     }
@@ -177,10 +177,12 @@ void printTime(const String& msg){
     uint64_t milliseconds = getTime_ms();
     uint64_t microseconds = getTime_us();
 
+    /**/
     Serial.printf("[%s] Visual: %02d:%02d:%02d.%03d | Seconds: %llu s| Milliseconds: %llu ms| Microseconds: %llu us\n",
                       msg.c_str(),
                       visual_time.hours, visual_time.minutes, visual_time.seconds, visual_time.milliseconds,
                       seconds, milliseconds, microseconds);
+    /**/
 }
 
 /*测试函数：循环打印当前时间到串口。
