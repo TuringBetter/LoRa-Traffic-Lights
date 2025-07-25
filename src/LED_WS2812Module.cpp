@@ -104,8 +104,10 @@ void LED_WS2812_SetState(const LED_Control_t &newState)
 {
     if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
     {
-        bool needsResync = (newState.isBlinking && !normalState.isBlinking) ||
-                           (newState.isBlinking && newState.blinkRate != normalState.blinkRate);
+        bool needsResync =  (newState.isBlinking && !normalState.isBlinking) ||
+                            (newState.color != normalState.color) ||
+                            (newState.blinkRate != normalState.blinkRate) ||
+                            (newState.brightness != normalState.brightness);
         if (needsResync) {
             g_trigger_resync = true;
         }
