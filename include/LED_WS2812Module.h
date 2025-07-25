@@ -55,6 +55,7 @@ void LED_WS2812_SetBlinkRate(uint8_t blinkRate);
 void LED_WS2812_GetState(LED_Control_t& curState);  // 获取当前LED状态
 void LED_WS2812_switch(bool enable);
 
+void LED_WS2812_TriggerBlinkResync();
 
 // 供 RadarModule 调用的函数
 void LED_WS2812_ForceSetState(const LED_Control_t& newState); // 雷达激活时强制设置

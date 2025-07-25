@@ -78,7 +78,7 @@ void triggerTimeSynchronization() {
         } else {
             Serial.println("[SyncTime] 警告：triggerTimeSynchronization 无法获取互斥锁！"); //
         }
-
+        LED_WS2812_TriggerBlinkResync();
         // 更新上次已知的 LoRa 数据，避免重复校准
         g_last_known_lora_real_ms = current_lora_real_ms;
         g_last_known_lora_latency_ms = current_lora_latency_ms;
