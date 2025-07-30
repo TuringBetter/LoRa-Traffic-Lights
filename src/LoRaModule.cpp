@@ -46,22 +46,26 @@ void LoRa_init_IDF()
     uart_param_config(UART_NUM_1, &uart_config);
     uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
     uart_set_pin(UART_NUM_1, LoRa_TX, LoRa_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    
     delay(500);
     String savedDevAddr, savedAppSKey, savedNwkSKey;
     // 尝试从NVS加载组播信息
-    if (NVS_loadLoRaMulticast(savedDevAddr, savedAppSKey, savedNwkSKey)) { // 调用 NVSManager 中的加载函数
+    if (NVS_loadLoRaMulticast(savedDevAddr, savedAppSKey, savedNwkSKey))  // 调用 NVSManager 中的加载函数
+    {
         // 如果成功加载（NVS中有数据），则使用NVS中的数据进行组播配置
         Serial.println("[LoRaModule] Successfully joined multicast group.");
         // 调用 addMuticast_IDF 进行组播入组
         addMuticast_IDF(savedDevAddr, savedAppSKey, savedNwkSKey);
     }
-    else{
+    else
+    {
         Serial.println("[LoRaModule] No saved multicast config found in NVS. Skipping multicast join.");
         joinNetwork_IDF(1);
         delay(10000);
         sendData("1");
         delay(2000);
     }
+    Serial.println("[LoRaModule] LoRa init finish");
 }
 
 

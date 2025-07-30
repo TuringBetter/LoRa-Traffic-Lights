@@ -4,6 +4,7 @@
 #include <freertos/task.h>
 
 extern TaskHandle_t AccTaskHandle;
+extern TaskHandle_t AccMonitorTaskHandle;
 
 enum Range {
     RANGE_2G = 0x00,
@@ -15,3 +16,5 @@ enum Range {
 void Acc_init();
 
 void accelerometerTask(void* pvParameters);
+
+void accMonitorTask(void* pvParameters);
