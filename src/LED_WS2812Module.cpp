@@ -65,7 +65,7 @@ void LED_WS2812_init()
     normalState = {
         .isBlinking     = false,
         .blinkRate      = BLINK_RATE_30, // 初始值，常亮不关心频率
-        .brightness     = 10,
+        .brightness     = 5,
         .color          = COLOR_YELLOW
     };
     actualYellowState = normalState; // 黄区初始为黄灯常亮
@@ -509,7 +509,7 @@ void LED_Test_Task(void *pvParameters)
                 newState.isBlinking = true;
                 newState.blinkRate = BLINK_RATE_30;
                 newState.brightness = 100;
-                newState.color = COLOR_RED;
+                newState.color = COLOR_YELLOW;
             } else { // 15-30秒：120次/min，亮度10，黄色
                 newState.isBlinking = true;
                 newState.blinkRate = BLINK_RATE_120;
@@ -519,12 +519,12 @@ void LED_Test_Task(void *pvParameters)
         } else { // 不闪烁模式
             if (subState == 0) { // 0-15秒：亮度100，黄色
                 newState.isBlinking = false;
-                newState.brightness = 100;
+                newState.brightness = 250;
                 newState.color = COLOR_YELLOW;
             } else { // 15-30秒：亮度10，红色
                 newState.isBlinking = false;
                 newState.brightness = 10;
-                newState.color = COLOR_RED;
+                newState.color = COLOR_YELLOW;
             }
         }
         

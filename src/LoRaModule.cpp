@@ -3,8 +3,8 @@
 #include "driver/uart.h"
 #include "NVSManager.h"
 // 内部局部变量
-static const uint64_t   LoRa_RX = 18;       //LoRa设备上的 TX 接 ESP32上的 RX也就是GPIO18
-static const uint64_t   LoRa_TX = 17;       //LoRa设备上的 RX 接 ESP32上的 TX也就是GPIO17
+static const uint64_t   LoRa_RX = 17;       //LoRa设备上的 TX 接 ESP32上的 RX也就是GPIO18, 对于初版型号，此处应为 17
+static const uint64_t   LoRa_TX = 18;       //LoRa设备上的 RX 接 ESP32上的 TX也就是GPIO17，对于初版型号，此处应为 18
 
 
 // 外部使用的变量

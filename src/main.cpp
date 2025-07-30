@@ -18,7 +18,7 @@ void setup() {
     NVS_init();
     LoRa_init_IDF();
     Button_init();
-    //Acc_init();
+    Acc_init();
     Radar_init();
     LED_WS2812_init();
     SyncTime_init();
@@ -47,7 +47,7 @@ void setup() {
         1                    // 运行核心 (1 = 核心1)
     );
 
-/** *
+/** */
   // 创建加速度计任务
     xTaskCreatePinnedToCore(
         accelerometerTask,   // 任务函数

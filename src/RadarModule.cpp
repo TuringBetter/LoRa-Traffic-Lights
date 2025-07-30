@@ -21,7 +21,7 @@ static void processRadarData();
 /* 初始化雷达模块 */
 void Radar_init()
 {
-    pinMode(RADAR_GPIO_PIN, INPUT); // 设置GPIO16为输入模式
+    pinMode(RADAR_GPIO_PIN, INPUT_PULLDOWN); // 设置GPIO16为输入模式
     // 创建互斥锁
     radarStateMutex = xSemaphoreCreateMutex();
     if (radarStateMutex == NULL) {

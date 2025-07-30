@@ -15,8 +15,8 @@ typedef struct
 } LED_Control_t;
 
 // 颜色定义
-#define COLOR_RED       0xFF0000
-#define COLOR_YELLOW    0xFFFF00
+#define COLOR_RED       0xFF0000    // 当颜色为 FF0000时是纯红色最大亮度，880000为一半亮度的红色
+#define COLOR_YELLOW    0xFF8000    // 当颜色为 FF8000时是纯黄色最大亮度，886000为一半亮度的黄色
 #define COLOR_OFF       0x000000
 
 // 闪烁频率定义
@@ -25,11 +25,11 @@ typedef struct
 #define BLINK_RATE_120     120
 
 // LED数量和分区定义
-#define NUM_LEDS            256       // 总LED数量
-#define NUM_YELLOW_LEDS     128       // 黄色区域LED数量 (1-128)
-#define NUM_RED_LEDS        128       // 红色区域LED数量 (129-256)
+#define NUM_LEDS            576       // 总LED数量
+#define NUM_YELLOW_LEDS     288       // 黄色区域LED数量 (1-128)
+#define NUM_RED_LEDS        288       // 红色区域LED数量 (129-256)
 #define YELLOW_LED_START_IDX 0        // 黄色区域起始索引 (0-127)
-#define RED_LED_START_IDX   128       // 红色区域起始索引 (128-255)
+#define RED_LED_START_IDX   288       // 红色区域起始索引 (128-255)
 
 // 初始化函数
 void LED_WS2812_init();
