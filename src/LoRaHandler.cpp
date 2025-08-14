@@ -154,8 +154,8 @@ void setBrightness(const String &payload)
         uint8_t low = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
         uint16_t payload_brightness = (high << 8) | low;
         
-        // 将0~7000的亮度值映射到0~255
-        uint8_t led_brightness = (uint8_t)((payload_brightness * 255) / 7000);
+        // 将0~7000的亮度值映射到0~100
+        uint8_t led_brightness = (uint8_t)((payload_brightness * 100) / 7000);
         
         LED_WS2812_SetBrightness(led_brightness);
     } 

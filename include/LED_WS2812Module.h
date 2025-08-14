@@ -25,11 +25,11 @@ typedef struct
 #define BLINK_RATE_120     120
 
 // LED数量和分区定义
-#define NUM_LEDS            576       // 总LED数量
-#define NUM_YELLOW_LEDS     288       // 黄色区域LED数量 (1-128)
-#define NUM_RED_LEDS        288       // 红色区域LED数量 (129-256)
+#define NUM_LEDS            1152       // 总LED数量
+#define NUM_YELLOW_LEDS     576       // 黄色区域LED数量 (1-128)
+#define NUM_RED_LEDS        576       // 红色区域LED数量 (129-256)
 #define YELLOW_LED_START_IDX 0        // 黄色区域起始索引 (0-127)
-#define RED_LED_START_IDX   288       // 红色区域起始索引 (128-255)
+#define RED_LED_START_IDX   576       // 红色区域起始索引 (128-255)
 
 // 初始化函数
 void LED_WS2812_init();

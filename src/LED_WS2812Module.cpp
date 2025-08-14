@@ -4,7 +4,7 @@
 
 #define LED_POWER_GPIO_PIN  40     // GPIO40用于使能 LED
 
-const int DATA_PIN  =   45;         // GPIO45用于控制 LED
+const int DATA_PIN  =   7;         // GPIO45用于控制 LED
 
 TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
@@ -508,23 +508,23 @@ void LED_Test_Task(void *pvParameters)
             if (subState == 0) { // 0-15秒：30次/min，亮度100，红色
                 newState.isBlinking = true;
                 newState.blinkRate = BLINK_RATE_30;
-                newState.brightness = 100;
-                newState.color = COLOR_YELLOW;
+                newState.brightness = 50;
+                newState.color = COLOR_RED;
             } else { // 15-30秒：120次/min，亮度10，黄色
                 newState.isBlinking = true;
                 newState.blinkRate = BLINK_RATE_120;
-                newState.brightness = 10;
+                newState.brightness = 5;
                 newState.color = COLOR_YELLOW;
             }
         } else { // 不闪烁模式
             if (subState == 0) { // 0-15秒：亮度100，黄色
                 newState.isBlinking = false;
-                newState.brightness = 250;
+                newState.brightness = 50;
                 newState.color = COLOR_YELLOW;
             } else { // 15-30秒：亮度10，红色
                 newState.isBlinking = false;
-                newState.brightness = 10;
-                newState.color = COLOR_YELLOW;
+                newState.brightness = 5;
+                newState.color = COLOR_RED;
             }
         }
         

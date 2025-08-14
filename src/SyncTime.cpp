@@ -54,7 +54,7 @@ void triggerTimeSynchronization() {
         current_lora_latency_ms != g_last_known_lora_latency_ms)
     {
         // 计算LoRa的“当天”微秒数
-        uint64_t lora_day_micros = (uint64_t)(current_lora_real_ms - current_lora_latency_ms) * 1000ULL;
+        uint64_t lora_day_micros = (uint64_t)(current_lora_real_ms + current_lora_latency_ms) * 1000ULL;
         lora_day_micros %= US_PER_DAY; // 确保 LoRa 时间也在一天周期内
 
         // 获取当前esp_timer的“当天”微秒数

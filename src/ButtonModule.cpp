@@ -3,7 +3,7 @@
 
 volatile static bool           buttonPressed   = false;
 volatile static unsigned long  buttonPressTime = 0;  // 按键按下的时间戳
-static const int               BUTTON_PIN      = 48;
+static const int               BUTTON_PIN      = 8;
 static const unsigned long     DEBOUNCE_TIME   = 20;      // 消抖时间（毫秒）
 
 TaskHandle_t ButtonTaskHandle  = NULL;
