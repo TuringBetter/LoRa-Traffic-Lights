@@ -38,6 +38,7 @@ extern SemaphoreHandle_t ledControlMutex                ;
 extern TaskHandle_t      LED_WS2812_TaskHandle          ;
 extern TaskHandle_t      LED_StatusChange_TaskHandle    ;
 extern TaskHandle_t      LED_Test_TaskHandle            ;
+extern TaskHandle_t      WS2812_Character_TaskHandle    ;
 
 // 任务函数
 void LED_WS2812_Task(void *pvParameters);
@@ -45,6 +46,7 @@ void LED_WS2812_Task(void *pvParameters);
 // 测试函数
 void LED_StatusChange_Task(void *pvParameters);
 void LED_Test_Task(void *pvParameters);
+void WS2812_Character_Task(void *pvParameters);
 
 // 外部接口函数
 void LED_WS2812_SetState(const LED_Control_t& newState);
