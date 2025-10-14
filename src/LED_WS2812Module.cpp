@@ -48,6 +48,7 @@ static LED_Control_t    normalState;
 static LED_Control_t    pendingNormalState;
 static bool             pendingNormalStateUpdated = false;
 
+static bool character_mode = false;
 const uint8_t stop_24x24[24][24] = {
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0},
@@ -327,7 +328,23 @@ void LED_WS2812_Task(void *pvParameters)
 {   
     while(1) 
     {
-        update_LED_WS2812();
+        if(character_mode)
+        {
+            // update_LED_WS2812_Character();
+            uint32_t color;
+            int i, j;
+            for (i = 0; i < 24; i++) {
+                for (j = 0; j < 24; j++) {
+                    color = stop_24x24_S[i][j] ? 0x0f0000 : COLOR_OFF;
+                    setPixelColorRange(i * 24 + j, 1, color);
+                }
+            }
+            strip.show();
+        }
+        else
+        {
+            update_LED_WS2812();
+        }
         vTaskDelay(pdMS_TO_TICKS(10)); // 10ms延时，控制更新频率
     }
 }
@@ -501,6 +518,16 @@ void LED_WS2812_switch(bool enable){
     }
 }
 
+void LED_WS2812_SetCharacter(uint8_t character)
+{
+    if(character == 0x01)
+    {
+        character_mode = true;
+    }else
+    {
+        character_mode = false;
+    }
+}
 
 void LED_StatusChange_Task(void *pvParameters)
 {

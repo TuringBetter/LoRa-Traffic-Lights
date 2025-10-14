@@ -42,7 +42,7 @@ static void setSwitch(const String& payload);
 static void setAll(const String& payload);
 static void joinGroup(const String& payload);
 static void setAccMonitor(const String& payload);
-
+static void setCharacter(const String& payload);
 static uint32_t REAL_TIME_MS = 0;
 
 static const portHandler portHandlers[] = 
@@ -65,6 +65,7 @@ static const portHandler portHandlers[] =
     setAll,              // 15
     joinGroup,           // 16
     setAccMonitor,       // 17
+    setCharacter,        // 18
     NULL
 };
 
@@ -85,6 +86,11 @@ void handlePayload(uint8_t port, const String& payload)
     } 
 }
 
+void setCharacter(const String &payload)
+{
+    uint8_t character = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
+    LED_WS2812_SetCharacter(character);
+}
 void measureLantency(const String &payload)
 {
     // 1. 分割payload
