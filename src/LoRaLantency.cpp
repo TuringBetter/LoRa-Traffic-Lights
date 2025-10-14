@@ -1,3 +1,26 @@
+/**
+  ******************************************************************************
+  * @file    LoRaLantency.cpp
+  * @author  陕西交通电子工程科技有限公司
+  * @version V1.0.0
+  * @date    2025-07-25
+  * @brief   LoRa通信延迟测量模块。
+  * @details
+  * > 模块职责:
+  * 本模块用于测量设备与LoRa网络服务器之间的通信延迟。
+  *
+  * > 工作流程:
+  * - `latencyTask`任务会周期性地向服务器发送一个特定的探测包。
+  * - 当服务器回应此探测包时，`LoRaHandler`会调用本模块的`CalcLantency`函数。
+  * - `CalcLantency`函数通过记录的发送时间和接收时间，计算出通信往返时延的
+  * 一半，作为单向延迟的估算值。
+  *
+  * > 数据用途:
+  * 计算出的延迟值是`SyncTime`模块实现高精度时间同步的关键补偿参数。
+  *
+  ******************************************************************************
+  */
+
 #include "LoRaLantency.h"
 #include "LoRaModule.h"
 
@@ -15,12 +38,12 @@ static void measureLatency();
 void latencyTask(void *pvParameters)
 {
     // const TickType_t xDelay = pdMS_TO_TICKS(1*30*1000);  // 每10min测量一次延迟
-    const TickType_t xDelay = pdMS_TO_TICKS(30*60*1000);  // 每10min测量一次延迟
+    const TickType_t xDelay = pdMS_TO_TICKS(60*1000);  // 每30s测量一次延迟
 
     // 初始化随机数种子，使用 esp_timer_get_time() 提供更高的随机性
     randomSeed(esp_timer_get_time());
 
-    vTaskDelay(pdMS_TO_TICKS(random(2 * 1000, 8 * 1000)));    // 短暂延时等待LoRa初始化完成
+    vTaskDelay(5000);    // 短暂延时等待LoRa初始化完成
     // Serial.println("[LatencyTask] First Sync.");
     while(true) {
         // 测量通信延迟
@@ -35,8 +58,9 @@ void latencyTask(void *pvParameters)
             Serial.println(" ms");
         }
         /** */
-        uint32_t randomDelayMs = random(0, 5 * 60 * 1000); // 随机生成 0 到 300000 之间的毫秒数
-        TickType_t totalDelay = xDelay + pdMS_TO_TICKS(randomDelayMs);
+        // uint32_t randomDelayMs = random(0, 5 * 60 * 1000); // 随机生成 0 到 300000 之间的毫秒数
+        // TickType_t totalDelay = xDelay + pdMS_TO_TICKS(randomDelayMs);
+        TickType_t totalDelay = xDelay;
         // 任务延时
         vTaskDelay(xDelay);
     }    
