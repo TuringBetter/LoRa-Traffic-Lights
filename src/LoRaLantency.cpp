@@ -38,12 +38,12 @@ static void measureLatency();
 void latencyTask(void *pvParameters)
 {
     // const TickType_t xDelay = pdMS_TO_TICKS(1*30*1000);  // 每10min测量一次延迟
-    const TickType_t xDelay = pdMS_TO_TICKS(30*60*1000);  // 每10min测量一次延迟
+    const TickType_t xDelay = pdMS_TO_TICKS(30*1000);  // 每30min测量一次延迟
 
     // 初始化随机数种子，使用 esp_timer_get_time() 提供更高的随机性
     randomSeed(esp_timer_get_time());
 
-    vTaskDelay(pdMS_TO_TICKS(random(2 * 1000, 8 * 1000)));    // 短暂延时等待LoRa初始化完成
+    vTaskDelay(5000);    // 短暂延时等待LoRa初始化完成
     // Serial.println("[LatencyTask] First Sync.");
     while(true) {
         // 测量通信延迟

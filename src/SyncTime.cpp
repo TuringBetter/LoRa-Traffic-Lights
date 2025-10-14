@@ -216,7 +216,7 @@ void SyncTime_Test_Task(void *pvParameters) {
 
     while (1) {
         printTime("SyncTime_Test");
-        vTaskDelay(pdMS_TO_TICKS(1000)); // 1-10秒随机延迟
+        vTaskDelay(pdMS_TO_TICKS(500)); // 1-10秒随机延迟
     }
 }
 
