@@ -38,7 +38,7 @@ static void measureLatency();
 void latencyTask(void *pvParameters)
 {
     // const TickType_t xDelay = pdMS_TO_TICKS(1*30*1000);  // 每10min测量一次延迟
-    const TickType_t xDelay = pdMS_TO_TICKS(30*1000);  // 每30min测量一次延迟
+    const TickType_t xDelay = pdMS_TO_TICKS(60*1000);  // 每30s测量一次延迟
 
     // 初始化随机数种子，使用 esp_timer_get_time() 提供更高的随机性
     randomSeed(esp_timer_get_time());
@@ -58,8 +58,9 @@ void latencyTask(void *pvParameters)
             Serial.println(" ms");
         }
         /** */
-        uint32_t randomDelayMs = random(0, 5 * 60 * 1000); // 随机生成 0 到 300000 之间的毫秒数
-        TickType_t totalDelay = xDelay + pdMS_TO_TICKS(randomDelayMs);
+        // uint32_t randomDelayMs = random(0, 5 * 60 * 1000); // 随机生成 0 到 300000 之间的毫秒数
+        // TickType_t totalDelay = xDelay + pdMS_TO_TICKS(randomDelayMs);
+        TickType_t totalDelay = xDelay;
         // 任务延时
         vTaskDelay(xDelay);
     }    
