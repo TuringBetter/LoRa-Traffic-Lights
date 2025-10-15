@@ -74,7 +74,7 @@ void LoRa_init_IDF()
     if (NVS_loadLoRaMulticast(savedDevAddr, savedAppSKey, savedNwkSKey))  // 调用 NVSManager 中的加载函数
     {
         // 如果成功加载（NVS中有数据），则使用NVS中的数据进行组播配置
-        Serial.println("[LoRaModule] Successfully joined multicast group.");
+        Serial.println("[LoRaModule] Successfully loaded multicast group.");
         // 调用 addMuticast_IDF 进行组播入组
         addMuticast_IDF(savedDevAddr, savedAppSKey, savedNwkSKey);
     }
