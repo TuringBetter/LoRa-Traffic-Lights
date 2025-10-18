@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    LoRaModule.cpp
   * @author  陕西交通电子工程科技有限公司
-  * @version V1.0.0
-  * @date    2025-08-02
+  * @version V2.0.0
+  * @date    2025-10-15
   * @brief   LoRa通信模块底层驱动。
   * @details
   * > 模块职责:
@@ -13,8 +13,20 @@
   * > 主要功能:
   * - 初始化与LoRa模组的UART通信。
   * - 封装设备入网、数据发送/接收等核心AT指令。
+  * - 提供可靠的入网检测机制，基于串口日志实时判断入网状态。
+  * - 支持自动重试机制，失败时会自动重新尝试入网。
   * - 提供`loraReceiveTask`任务，在后台持续监听并解析来自LoRa模组的原始数据。
   * - 支持从NVS加载配置并加入多播组。
+  *
+  * > V2.0.0 更新说明 (2025-10-15):
+  * - 实现基于日志的可靠入网检测（检测"+CJOIN:OK"和"Joined"标志）
+  * - 添加入网失败自动重试机制（默认最多5次）
+  * - 优化代码结构，消除冗余代码
+  * - 改进错误处理和日志输出
+  * - 新增函数：
+  *   * readLineFromUART() - 从UART读取一行数据
+  *   * waitForJoinSuccess() - 等待并检测入网成功
+  *   * performReliableJoin() - 执行可靠的入网流程
   *
   ******************************************************************************
   */
@@ -53,6 +65,185 @@ void sendData(const String &payload)
     sendData_IDF(payload);
 }
 
+/**
+ * @brief 从串口读取一行数据，用于入网过程中的日志监听
+ * @param line_buffer 行缓冲区
+ * @param line_len 当前行长度指针
+ * @param timeout_ms 超时时间（毫秒）
+ * @return 读取到的完整行，如果超时返回空字符串
+ */
+static String readLineFromUART(char* line_buffer, int* line_len, uint32_t timeout_ms)
+{
+    uint32_t start_time = millis();
+    char rx_buffer[256];
+    
+    while (millis() - start_time < timeout_ms)
+    {
+        int length = 0;
+        ESP_ERROR_CHECK(uart_get_buffered_data_len(UART_NUM_1, (size_t*)&length));
+        
+        if (length > 0)
+        {
+            length = uart_read_bytes(UART_NUM_1, (uint8_t*)rx_buffer, 
+                                    (length < sizeof(rx_buffer) - 1) ? length : sizeof(rx_buffer) - 1, 0);
+            rx_buffer[length] = '\0';
+            
+            for (int i = 0; i < length; ++i)
+            {
+                if (rx_buffer[i] == '\n')
+                {
+                    line_buffer[*line_len] = '\0';
+                    String result = String(line_buffer);
+                    *line_len = 0;  // 重置行长度
+                    result.trim();
+                    return result;
+                }
+                else
+                {
+                    if (*line_len < 511)  // 防止缓冲区溢出
+                    {
+                        line_buffer[(*line_len)++] = rx_buffer[i];
+                    }
+                }
+            }
+        }
+        delay(10);  // 短暂延时，避免CPU占用过高
+    }
+    return "";  // 超时返回空字符串
+}
+
+/**
+ * @brief 等待并检测LoRa入网成功的串口日志
+ * @param timeout_ms 超时时间（毫秒）
+ * @return true表示入网成功，false表示超时失败
+ */
+static bool waitForJoinSuccess(uint32_t timeout_ms)
+{
+    uint32_t start_time = millis();
+    bool found_cjoin_ok = false;
+    bool found_joined = false;
+    char line_buffer[512];
+    int line_len = 0;
+    
+    Serial.println("[LoRaModule] Waiting for join success indicators...");
+    
+    while (millis() - start_time < timeout_ms)
+    {
+        String line = readLineFromUART(line_buffer, &line_len, 100);  // 每次等待100ms读一行
+        
+        if (line.length() > 0)
+        {
+            Serial.println("[LoRa]: " + line);
+            
+            // 检测 "+CJOIN:OK"
+            if (line.indexOf("+CJOIN:OK") >= 0)
+            {
+                found_cjoin_ok = true;
+                Serial.println("[LoRaModule] ✓ Detected +CJOIN:OK");
+            }
+            
+            // 检测 "Joined"
+            if (line.indexOf("Joined") >= 0)
+            {
+                found_joined = true;
+                Serial.println("[LoRaModule] ✓ Detected Joined");
+            }
+            
+            // 如果两个标志都检测到，立即返回成功
+            if (found_cjoin_ok && found_joined)
+            {
+                Serial.println("[LoRaModule] Join successful! Both indicators detected.");
+                return true;
+            }
+        }
+    }
+    
+    // 超时，返回失败
+    Serial.println("[LoRaModule] Join timeout or failed.");
+    Serial.print("[LoRaModule] Status: +CJOIN:OK=");
+    Serial.print(found_cjoin_ok ? "YES" : "NO");
+    Serial.print(", Joined=");
+    Serial.println(found_joined ? "YES" : "NO");
+    
+    return false;
+}
+
+/**
+ * @brief 执行可靠的网络入网流程，包含重试机制
+ * @param useMulticast 是否使用多播模式
+ * @param devAddr 多播设备地址（仅多播模式需要）
+ * @param appSKey 多播AppSKey（仅多播模式需要）
+ * @param nwkSKey 多播NwkSKey（仅多播模式需要）
+ * @param maxRetries 最大重试次数
+ * @return true表示入网成功，false表示失败
+ */
+static bool performReliableJoin(bool useMulticast, const String &devAddr, 
+                                const String &appSKey, const String &nwkSKey, 
+                                int maxRetries)
+{
+    int attempt = 0;
+    
+    while (attempt < maxRetries)
+    {
+        attempt++;
+        Serial.println("[LoRaModule] ======================================");
+        Serial.print("[LoRaModule] Join attempt ");
+        Serial.print(attempt);
+        Serial.print(" of ");
+        Serial.println(maxRetries);
+        Serial.println("[LoRaModule] ======================================");
+        
+        // 清空UART缓冲区
+        uart_flush(UART_NUM_1);
+        
+        if (useMulticast)
+        {
+            // 多播模式：先离网，配置多播，再入网
+            Serial.println("[LoRaModule] Configuring multicast...");
+            joinNetwork_IDF(0);  // 离网
+            delay(500);
+            
+            // 发送多播配置命令
+            String command = "AT+CADDMUTICAST=";
+            command += devAddr;
+            command += ",";
+            command += appSKey;
+            command += ",";
+            command += nwkSKey;
+            command += "\n";
+            uart_write_bytes(UART_NUM_1, command.c_str(), command.length());
+            delay(500);
+        }
+        
+        // 发起入网
+        Serial.println("[LoRaModule] Sending join command...");
+        joinNetwork_IDF(1);
+        
+        // 等待入网成功（超时30秒）
+        if (waitForJoinSuccess(10000))
+        {
+            Serial.println("[LoRaModule] Network join successful!");
+            // 发送测试数据
+            /* *
+            delay(2000);
+            sendData("1");
+            delay(1000);
+            /* */
+            return true;
+        }
+        
+        // 入网失败，如果还有重试次数，继续重试
+        if (attempt < maxRetries)
+        {
+            Serial.println("[LoRaModule] Join failed, retrying...");
+            delay(2000);  // 重试前等待2秒
+        }
+    }
+    
+    Serial.println("[LoRaModule] All join attempts failed!");
+    return false;
+}
+
 void LoRa_init_IDF()
 {
     // 初始化串口
@@ -69,28 +260,39 @@ void LoRa_init_IDF()
     uart_set_pin(UART_NUM_1, LoRa_TX, LoRa_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     
     delay(500);
+    
     String savedDevAddr, savedAppSKey, savedNwkSKey;
+    bool useMulticast = false;
+    
     // 尝试从NVS加载组播信息
-    if (NVS_loadLoRaMulticast(savedDevAddr, savedAppSKey, savedNwkSKey))  // 调用 NVSManager 中的加载函数
+    if (NVS_loadLoRaMulticast(savedDevAddr, savedAppSKey, savedNwkSKey))
     {
-        // 如果成功加载（NVS中有数据），则使用NVS中的数据进行组播配置
-        Serial.println("[LoRaModule] Successfully loaded multicast group.");
-        // 调用 addMuticast_IDF 进行组播入组
-        addMuticast_IDF(savedDevAddr, savedAppSKey, savedNwkSKey);
+        Serial.println("[LoRaModule] Successfully loaded multicast config from NVS.");
+        useMulticast = true;
     }
     else
     {
-        Serial.println("[LoRaModule] No saved multicast config found in NVS. Skipping multicast join.");
-        joinNetwork_IDF(1);
-        delay(10000);
-        sendData("1");
-        delay(2000);
+        Serial.println("[LoRaModule] No saved multicast config found in NVS.");
+        Serial.println("[LoRaModule] Will use standard join mode.");
     }
-    Serial.println("[LoRaModule] LoRa init finish");
+    
+    // 执行可靠入网，最多重试5次
+    const int MAX_RETRIES = 5;
+    bool joinSuccess = performReliableJoin(useMulticast, savedDevAddr, savedAppSKey, savedNwkSKey, MAX_RETRIES);
+    
+    if (joinSuccess)
+    {
+        Serial.println("[LoRaModule] LoRa initialization complete - Network joined successfully!");
+    }
+    else
+    {
+        Serial.println("[LoRaModule] LoRa initialization failed - Could not join network!");
+        Serial.println("[LoRaModule] Please check LoRa module and network configuration.");
+    }
 }
 
-
-void joinNetwork_IDF(bool joinMode){
+void joinNetwork_IDF(bool joinMode)
+{
     // 构建AT指令 - 加入网络
     String command = "AT+CJOIN=";
     command += String(joinMode ? 1 : 0);  // 根据布尔值设置第一个参数
@@ -101,25 +303,12 @@ void joinNetwork_IDF(bool joinMode){
     uart_write_bytes(UART_NUM_1, command.c_str(), command.length());
 }
 
-void addMuticast_IDF(const String &DevAddr, const String &AppSKey, const String &NwkSKey){
-    // 添加多播配置
-    String command = "AT+CADDMUTICAST=";
-    command += DevAddr;  // DevAddr
-    command += ",";
-    command += AppSKey;  // AppSKey
-    command += ",";
-    command += NwkSKey;  // NwkSKey
-    command += "\n";  // 添加换行符
-
-    // 使用ESP-IDF UART API发送数据
-    joinNetwork_IDF(0);
-    delay(500);
-    uart_write_bytes(UART_NUM_1, command.c_str(), command.length());
-    delay(500);
-    joinNetwork_IDF(1);
-    delay(10000);
-    sendData("1");
-    delay(2000);
+void addMuticast_IDF(const String &DevAddr, const String &AppSKey, const String &NwkSKey)
+{
+    // 此函数已被重构，现在通过 performReliableJoin 统一处理
+    // 为保持兼容性，提供一个简化的包装函数
+    Serial.println("[LoRaModule] addMuticast_IDF called - using reliable join mechanism");
+    performReliableJoin(true, DevAddr, AppSKey, NwkSKey, 5);
 }
 
 void sendData_IDF(const String &payload)
