@@ -49,21 +49,6 @@ TaskHandle_t        heartBeatTaskHandle        = NULL;  // 心跳任务句柄
 static void receiveData_Test();
 static void receiveData();
 static void receiveData_IDF();
-static void sendData_Arduino(const String &payload);
-static void sendData_IDF(const String &payload);
-
-void LoRa_init()
-{
-    Serial1.begin(9600, SERIAL_8N1, LoRa_RX, LoRa_TX);
-    delay(10000);
-    sendData("1");
-}
-
-void sendData(const String &payload)
-{
-    // sendData_Arduino(payload);
-    sendData_IDF(payload);
-}
 
 /**
  * @brief 从串口读取一行数据，用于入网过程中的日志监听
@@ -244,7 +229,7 @@ static bool performReliableJoin(bool useMulticast, const String &devAddr,
     return false;
 }
 
-void LoRa_init_IDF()
+void LoRa_init()
 {
     // 初始化串口
     uart_config_t uart_config = {
@@ -311,7 +296,7 @@ void addMuticast_IDF(const String &DevAddr, const String &AppSKey, const String 
     performReliableJoin(true, DevAddr, AppSKey, NwkSKey, 5);
 }
 
-void sendData_IDF(const String &payload)
+void sendData(const String &payload)
 {
     // 构建AT指令
     String command = "AT+DTRX=";
@@ -326,23 +311,6 @@ void sendData_IDF(const String &payload)
 
     // 使用ESP-IDF UART API发送数据
     uart_write_bytes(UART_NUM_1, command.c_str(), command.length());
-}
-
-void sendData_Arduino(const String &payload)
-{
-    // 构建AT指令
-    String command = "AT+DTRX=";
-    command += String(0);
-    command += ",";
-    command += String(1);
-    command += ",";
-    command += String(payload.length());
-    command += ",";
-    command += payload;
-
-    // Serial.println(command);
-    // 发送命令
-    Serial1.println(command);
 }
 
 void receiveData()

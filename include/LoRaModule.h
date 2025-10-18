@@ -42,10 +42,9 @@ extern TaskHandle_t heartBeatTaskHandle;  // 心跳任务句柄
 void loraReceiveTask(void* pvParameters);
 void heartBeatTask(void* pvParameters);  // 心跳任务函数
 
-void LoRa_init();
 void sendData(const String& payload);
 
-void LoRa_init_IDF();
+void LoRa_init();
 
 void joinNetwork_IDF(bool joinMode);
 void addMuticast_IDF(const String& DevAddr, const String& AppSKey, const String& NwkSKey);

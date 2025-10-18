@@ -43,7 +43,7 @@ void setup() {
     Serial.begin(115200);
 /** */
     NVS_init();
-    LoRa_init_IDF();
+    LoRa_init();
     Button_init();
     Acc_init();
     Radar_init();
