@@ -75,7 +75,7 @@ static String readLineFromUART(char* line_buffer, int* line_len, uint32_t timeou
             
             for (int i = 0; i < length; ++i)
             {
-                if (rx_buffer[i] == '\n')
+                if (rx_buffer[i] == '\n' || rx_buffer[i] == '\r')
                 {
                     line_buffer[*line_len] = '\0';
                     String result = String(line_buffer);
@@ -98,58 +98,104 @@ static String readLineFromUART(char* line_buffer, int* line_len, uint32_t timeou
 }
 
 /**
+ * @brief 改进的串口日志检测函数，持续监听直到检测到目标字符串
+ * @param target_string 要检测的目标字符串
+ * @param timeout_ms 超时时间（毫秒）
+ * @return true表示检测到目标字符串，false表示超时
+ */
+static bool waitForStringInUART(const String& target_string, uint32_t timeout_ms)
+{
+    uint32_t start_time = millis();
+    char rx_buffer[256];
+    String accumulated_data = "";
+    
+    Serial.println("[LoRaModule] Waiting for: " + target_string);
+    
+    while (millis() - start_time < timeout_ms)
+    {
+        int length = 0;
+        ESP_ERROR_CHECK(uart_get_buffered_data_len(UART_NUM_1, (size_t*)&length));
+        
+        if (length > 0)
+        {
+            length = uart_read_bytes(UART_NUM_1, (uint8_t*)rx_buffer, 
+                                    (length < sizeof(rx_buffer) - 1) ? length : sizeof(rx_buffer) - 1, 0);
+            rx_buffer[length] = '\0';
+            
+            // 将新数据添加到累积字符串
+            accumulated_data += String(rx_buffer);
+            
+            // 打印接收到的原始数据
+            Serial.print("[LoRa Raw]: ");
+            Serial.print(rx_buffer);
+            
+            // 检查是否包含目标字符串
+            if (accumulated_data.indexOf(target_string) >= 0)
+            {
+                Serial.println();
+                Serial.println("[LoRaModule] ✓ Detected: " + target_string);
+                return true;
+            }
+            
+            // 如果累积数据太长，截断以节省内存
+            if (accumulated_data.length() > 1000)
+            {
+                accumulated_data = accumulated_data.substring(accumulated_data.length() - 500);
+            }
+        }
+        delay(10);  // 短暂延时，避免CPU占用过高
+    }
+    
+    Serial.println();
+    Serial.println("[LoRaModule] Timeout waiting for: " + target_string);
+    return false;
+}
+
+/**
  * @brief 等待并检测LoRa入网成功的串口日志
  * @param timeout_ms 超时时间（毫秒）
  * @return true表示入网成功，false表示超时失败
  */
 static bool waitForJoinSuccess(uint32_t timeout_ms)
 {
+    Serial.println("[LoRaModule] Waiting for join success indicators...");
+    /** */
+    // 方案一：只检测+CJOIN:OK（推荐）
+    if (waitForStringInUART("+CJOIN:OK", timeout_ms))
+    {
+        Serial.println("[LoRaModule] Join successful! +CJOIN:OK detected.");
+        return true;
+    }
+    /** */
+    // 方案二：如果需要检测两个标志，可以这样实现：
+    /** *
     uint32_t start_time = millis();
     bool found_cjoin_ok = false;
     bool found_joined = false;
-    char line_buffer[512];
-    int line_len = 0;
-    
-    Serial.println("[LoRaModule] Waiting for join success indicators...");
     
     while (millis() - start_time < timeout_ms)
     {
-        String line = readLineFromUART(line_buffer, &line_len, 100);  // 每次等待100ms读一行
-        
-        if (line.length() > 0)
+        if (!found_cjoin_ok && waitForStringInUART("+CJOIN:OK", 1000))
         {
-            Serial.println("[LoRa]: " + line);
-            
-            // 检测 "+CJOIN:OK"
-            if (line.indexOf("+CJOIN:OK") >= 0)
-            {
-                found_cjoin_ok = true;
-                Serial.println("[LoRaModule] ✓ Detected +CJOIN:OK");
-            }
-            
-            // 检测 "Joined"
-            if (line.indexOf("Joined") >= 0)
-            {
-                found_joined = true;
-                Serial.println("[LoRaModule] ✓ Detected Joined");
-            }
-            
-            // 如果两个标志都检测到，立即返回成功
-            if (found_cjoin_ok && found_joined)
-            {
-                Serial.println("[LoRaModule] Join successful! Both indicators detected.");
-                return true;
-            }
+            found_cjoin_ok = true;
+            Serial.println("[LoRaModule] ✓ Detected +CJOIN:OK");
+        }
+        
+        if (!found_joined && waitForStringInUART("Joined", 1000))
+        {
+            found_joined = true;
+            Serial.println("[LoRaModule] ✓ Detected Joined");
+        }
+        
+        if (found_cjoin_ok && found_joined)
+        {
+            Serial.println("[LoRaModule] Join successful! Both indicators detected.");
+            return true;
         }
     }
+    /** */
     
-    // 超时，返回失败
     Serial.println("[LoRaModule] Join timeout or failed.");
-    Serial.print("[LoRaModule] Status: +CJOIN:OK=");
-    Serial.print(found_cjoin_ok ? "YES" : "NO");
-    Serial.print(", Joined=");
-    Serial.println(found_joined ? "YES" : "NO");
-    
     return false;
 }
 
