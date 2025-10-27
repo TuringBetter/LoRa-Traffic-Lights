@@ -22,7 +22,8 @@
 
 #include "LED_WS2812Module.h"
 #include "SyncTime.h"
-#include "RadarModule.h" 
+#include "RadarModule.h"
+#include "WatchDog.h" 
 
 #define LED_POWER_GPIO_PIN  40     // GPIO40用于使能 LED
 
@@ -180,7 +181,8 @@ void LED_WS2812_GetState(LED_Control_t& curState)
 // 根据雷达灯是否激活来决定是立即应用还是缓存。
 void LED_WS2812_SetState(const LED_Control_t &newState)
 {
-    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
+    // 使用有限超时避免长时间阻塞导致看门狗超时
+    if (xSemaphoreTake(ledControlMutex, pdMS_TO_TICKS(500)) == pdTRUE) 
     {
         bool needsResync =  (newState.isBlinking && !normalState.isBlinking) ||
                             (newState.color != normalState.color) ||
@@ -223,6 +225,9 @@ void LED_WS2812_SetState(const LED_Control_t &newState)
             }
         }
         xSemaphoreGive(ledControlMutex);
+    } else {
+        // 互斥锁获取超时，记录警告但继续执行（避免阻塞看门狗）
+        Serial.println("[LED] Warning: Failed to acquire mutex in LED_WS2812_SetState (timeout 500ms)");
     }
 }
 
@@ -342,6 +347,10 @@ void LED_WS2812_Task(void *pvParameters)
         {
             update_LED_WS2812();
         }
+        
+        // 喂狗 - 通知看门狗任务正常运行
+        WatchDog_feed("LED_WS2812_Task");
+        
         vTaskDelay(pdMS_TO_TICKS(10)); // 10ms延时，控制更新频率
     }
 }
@@ -372,7 +381,7 @@ static void update_LED_WS2812(void)
     LED_Control_t currentActualRedState; 
     
     // 获取当前 actualYellowState 和 actualRedState，使用互斥锁确保线程安全
-    if (xSemaphoreTake(ledControlMutex, portMAX_DELAY) == pdTRUE) 
+    if (xSemaphoreTake(ledControlMutex, pdMS_TO_TICKS(500)) == pdTRUE) 
     {
         if (g_trigger_resync) {
             uint32_t current_s = getTime_s();
@@ -532,6 +541,9 @@ void LED_StatusChange_Task(void *pvParameters)
     uint8_t state = 0;
     LED_Control_t newState;
     
+    // 首次喂狗，标记任务已启动
+    WatchDog_feed("LED_StatusChange_Task");
+    
     while(1) {
         switch(state) {
             case 0: // 黄色最大亮度常亮
@@ -571,10 +583,17 @@ void LED_StatusChange_Task(void *pvParameters)
                 break;
         }
         
+        // 在调用可能阻塞的函数前先喂狗
+        WatchDog_feed("LED_StatusChange_Task");
         LED_WS2812_SetState(newState);
         
         state = (state + 1) % 6;
-        vTaskDelay(pdMS_TO_TICKS(60*1000)); // 每个状态持续1分钟
+        
+        // 每个状态持续1分钟，但需要在延时期间定期喂狗
+        for (int i = 0; i < 6; i++) {
+            vTaskDelay(pdMS_TO_TICKS(1000)); // 每秒延时一次
+            WatchDog_feed("LED_StatusChange_Task");  // 每秒喂狗一次
+        }
     }
 }
 

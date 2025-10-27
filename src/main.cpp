@@ -36,6 +36,7 @@
 #include "LoRaLantency.h"
 #include "SyncTime.h"
 #include "NVSManager.h"
+#include "WatchDog.h"
 
 
 
@@ -49,6 +50,7 @@ void setup() {
     //Radar_init();
     LED_WS2812_init();
     SyncTime_init();
+    WatchDog_init();
 
 /** *
     // 创建按键检测任务
@@ -156,6 +158,19 @@ void setup() {
 /** */
     // vTaskDelay(pdMS_TO_TICKS(15000));
     // 删除setup任务，因为不再需要
+
+    /** */
+    // 创建看门狗任务 - 优先级设置为2确保能优先执行
+    xTaskCreatePinnedToCore(
+        watchdogTask,           // 任务函数
+        "WatchDogTask",         // 任务名称
+        4096,                   // 堆栈大小
+        NULL,                   // 任务参数
+        2,                      // 任务优先级（提高到2以确保及时监控）
+        &WatchDogTaskHandle,    // 任务句柄
+        1                       // 运行核心 (1 = 核心1)
+    );
+    /** */
     vTaskDelete(NULL);
 /** */
 

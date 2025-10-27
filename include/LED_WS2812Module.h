@@ -38,7 +38,7 @@ typedef struct
 
 // 颜色定义
 #define COLOR_RED       0xFF0000    // 当颜色为 FF0000时是纯红色最大亮度，880000为一半亮度的红色
-#define COLOR_YELLOW    0xFF8000    // 当颜色为 FF8000时是纯黄色最大亮度，886000为一半亮度的黄色
+#define COLOR_YELLOW    0xFFFF00    // 当颜色为 FFFF00时是纯黄色最大亮度，FFFF00为一半亮度的黄色
 #define COLOR_GREEN     0x00FF00    // 当颜色为 00FF00时是纯绿色最大亮度，008800为一半亮度的绿色
 #define COLOR_OFF       0x000000
 
