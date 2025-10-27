@@ -610,25 +610,25 @@ void LED_Test_Task(void *pvParameters)
     while(1) {
         if (state == 0) { // 闪烁模式
             if (subState == 0) { // 0-15秒：30次/min，亮度100，红色
-                newState.isBlinking = true;
+                newState.isBlinking = false;
                 newState.blinkRate = BLINK_RATE_30;
-                newState.brightness = 50;
-                newState.color = COLOR_RED;
+                newState.brightness = 255;
+                newState.color = 0xFFF000;
             } else { // 15-30秒：120次/min，亮度10，黄色
-                newState.isBlinking = true;
+                newState.isBlinking = false;
                 newState.blinkRate = BLINK_RATE_120;
-                newState.brightness = 5;
-                newState.color = COLOR_YELLOW;
+                newState.brightness = 255;
+                newState.color = 0xFFF000;
             }
         } else { // 不闪烁模式
             if (subState == 0) { // 0-15秒：亮度100，黄色
                 newState.isBlinking = false;
-                newState.brightness = 50;
-                newState.color = COLOR_YELLOW;
+                newState.brightness = 255;
+                newState.color = 0x00FF00;
             } else { // 15-30秒：亮度10，红色
                 newState.isBlinking = false;
-                newState.brightness = 5;
-                newState.color = COLOR_RED;
+                newState.brightness = 255;
+                newState.color = 0x00FF00;
             }
         }
         
@@ -655,7 +655,7 @@ void LED_Test_Task(void *pvParameters)
         Serial.println();
         
         // 等待15秒
-        vTaskDelay(pdMS_TO_TICKS(14500));
+        vTaskDelay(pdMS_TO_TICKS(20000));
         
         // 更新子状态
         subState = (subState + 1) % 2;
