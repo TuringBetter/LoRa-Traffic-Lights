@@ -134,12 +134,12 @@ void setup() {
 /** */
     // 创建LED测试任务
     xTaskCreatePinnedToCore(
-        LED_Test_Task,            // 任务函数
-        "LED_Test_Task",          // 任务名称
+        LED_StatusChange_Task,            // 任务函数
+        "LED_StatusChange_Task",          // 任务名称
         4096,                     // 堆栈大小
         NULL,                     // 任务参数
         1,                        // 任务优先级
-        &LED_Test_TaskHandle,     // 任务句柄
+        &LED_StatusChange_TaskHandle,     // 任务句柄
         1                         // 运行核心 (1 = 核心1)
     );
 /** *

@@ -26,7 +26,7 @@
 
 #define LED_POWER_GPIO_PIN  40     // GPIO40用于使能 LED
 
-const int DATA_PIN  =   7;         // GPIO45用于控制 LED
+const int DATA_PIN  =   45;         // GPIO45用于控制 LED
 
 TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
@@ -534,49 +534,47 @@ void LED_StatusChange_Task(void *pvParameters)
     
     while(1) {
         switch(state) {
-            case 0: // 红色最大亮度常亮
+            case 0: // 黄色最大亮度常亮
                 newState.isBlinking = false;
-                newState.color = COLOR_RED;
-                newState.brightness = 255;
+                newState.color = COLOR_YELLOW;
+                newState.brightness = 10;
                 break;
                 
             case 1: // 红色最小亮度常亮
                 newState.isBlinking = false;
-                newState.color = COLOR_RED;
-                newState.brightness = 50;
+                newState.color = COLOR_OFF;
+                newState.brightness = 0;
                 break;
                 
             case 2: // 黄色最大亮度常亮
                 newState.isBlinking = false;
-                newState.color = COLOR_YELLOW;
-                newState.brightness = 255;
+                newState.color = COLOR_OFF;
+                newState.brightness = 0;
                 break;
                 
             case 3: // 黄色最小亮度常亮
                 newState.isBlinking = false;
-                newState.color = COLOR_YELLOW;
-                newState.brightness = 50;
+                newState.color = COLOR_OFF;
+                newState.brightness = 0;
                 break;
                 
             case 4: // 红色最大亮度30次/min闪烁
-                newState.isBlinking = true;
-                newState.color = COLOR_RED;
-                newState.brightness = 255;
-                newState.blinkRate = BLINK_RATE_30;
+                newState.isBlinking = false;
+                newState.color = COLOR_OFF;
+                newState.brightness = 0;
                 break;
                 
             case 5: // 红色最大亮度60次/min闪烁
-                newState.isBlinking = true;
-                newState.color = COLOR_RED;
-                newState.brightness = 255;
-                newState.blinkRate = BLINK_RATE_60;
+                newState.isBlinking = false;
+                newState.color = COLOR_OFF;
+                newState.brightness = 0;
                 break;
         }
         
         LED_WS2812_SetState(newState);
         
         state = (state + 1) % 6;
-        vTaskDelay(pdMS_TO_TICKS(5000)); // 每个状态持续5秒
+        vTaskDelay(pdMS_TO_TICKS(60*1000)); // 每个状态持续1分钟
     }
 }
 
