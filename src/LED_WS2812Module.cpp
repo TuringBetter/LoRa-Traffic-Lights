@@ -27,7 +27,7 @@
 
 #define LED_POWER_GPIO_PIN  40     // GPIO40用于使能 LED
 
-const int DATA_PIN  =   45;         // GPIO45用于控制 LED
+const int DATA_PIN  =   7;         // GPIO45用于控制 LED
 
 TaskHandle_t        LED_WS2812_TaskHandle          =         NULL;
 TaskHandle_t        LED_StatusChange_TaskHandle    =         NULL;
@@ -551,32 +551,14 @@ void LED_StatusChange_Task(void *pvParameters)
                 newState.color = COLOR_YELLOW;
                 newState.brightness = 10;
                 break;
-                
-            case 1: // 红色最小亮度常亮
+
+            case 12: // 红色最大亮度常亮
                 newState.isBlinking = false;
-                newState.color = COLOR_OFF;
-                newState.brightness = 0;
+                newState.color = COLOR_RED;
+                newState.brightness = 10;
                 break;
-                
-            case 2: // 黄色最大亮度常亮
-                newState.isBlinking = false;
-                newState.color = COLOR_OFF;
-                newState.brightness = 0;
-                break;
-                
-            case 3: // 黄色最小亮度常亮
-                newState.isBlinking = false;
-                newState.color = COLOR_OFF;
-                newState.brightness = 0;
-                break;
-                
-            case 4: // 红色最大亮度30次/min闪烁
-                newState.isBlinking = false;
-                newState.color = COLOR_OFF;
-                newState.brightness = 0;
-                break;
-                
-            case 5: // 红色最大亮度60次/min闪烁
+
+            default: 
                 newState.isBlinking = false;
                 newState.color = COLOR_OFF;
                 newState.brightness = 0;
@@ -587,10 +569,10 @@ void LED_StatusChange_Task(void *pvParameters)
         WatchDog_feed("LED_StatusChange_Task");
         LED_WS2812_SetState(newState);
         
-        state = (state + 1) % 6;
+        state = (state + 1) % 24;
         
         // 每个状态持续1分钟，但需要在延时期间定期喂狗
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 5; i++) {
             vTaskDelay(pdMS_TO_TICKS(1000)); // 每秒延时一次
             WatchDog_feed("LED_StatusChange_Task");  // 每秒喂狗一次
         }
