@@ -23,6 +23,7 @@
 
 #include "LoRaLantency.h"
 #include "LoRaModule.h"
+#include "LED_WS2812Module.h"
 
 TaskHandle_t latencyTaskHandle = NULL;  // 延迟测量任务句柄
 // static const uint32_t   SYNC_LANTENCY         = 1000 ;  // 同步延迟时间（1秒）
@@ -33,15 +34,27 @@ static uint32_t SEND_TIME              = 0     ;        // 发送时间
 static uint32_t RECV_TIME              = 0     ;        // 接收时间
 
 
+static const uint32_t LATENCY_REQUEST_INTERVAL_MS = 30UL * 1000UL;
+static const uint32_t LATENCY_OFFLINE_TIMEOUT_MS  = LATENCY_REQUEST_INTERVAL_MS * 10UL;
+
+static volatile uint32_t LAST_RESPONSE_TIME       = 0;
+static bool             IS_OFFLINE_YELLOW_BLINK   = false;
+static bool             SAVED_LED_STATE_VALID     = false;
+static LED_Control_t    SAVED_LED_STATE;
+
 static void measureLatency();
+static void checkLatencyTimeout();
+static void enterOfflineYellowBlink();
+static void leaveOfflineYellowBlink();
 
 void latencyTask(void *pvParameters)
 {
     // const TickType_t xDelay = pdMS_TO_TICKS(1*30*1000);  // 每10min测量一次延迟
-    const TickType_t xDelay = pdMS_TO_TICKS(30*1000);  // 每30min测量一次延迟
+    const TickType_t xDelay = pdMS_TO_TICKS(30*1000);  // 每30s测量一次延迟
 
     // 初始化随机数种子，使用 esp_timer_get_time() 提供更高的随机性
     randomSeed(esp_timer_get_time());
+    LAST_RESPONSE_TIME = millis();
 
     vTaskDelay(5000);    // 短暂延时等待LoRa初始化完成
     // Serial.println("[LatencyTask] First Sync.");
@@ -61,7 +74,9 @@ void latencyTask(void *pvParameters)
         uint32_t randomDelayMs = random(0, 5 * 60 * 1000); // 随机生成 0 到 300000 之间的毫秒数
         TickType_t totalDelay = xDelay + pdMS_TO_TICKS(randomDelayMs);
         // 任务延时
+        // 暂时不用randomDelayMs
         vTaskDelay(xDelay);
+        checkLatencyTimeout();
     }    
 }
 
@@ -77,6 +92,8 @@ uint32_t getDelay()
 void CalcLantency()
 {
     RECV_TIME = millis();
+    LAST_RESPONSE_TIME = RECV_TIME;
+    leaveOfflineYellowBlink();
     LENTENCY=(RECV_TIME-SEND_TIME)/2;
     /*
     Serial.print("current delay:");
@@ -94,4 +111,45 @@ void measureLatency()
     // Serial.println("send measure lantency instruction");
     sendData("06");
     SEND_TIME = millis();
+}
+
+static void checkLatencyTimeout()
+{
+    uint32_t currentTime = millis();
+    if (!IS_OFFLINE_YELLOW_BLINK &&
+        (uint32_t)(currentTime - LAST_RESPONSE_TIME) >= LATENCY_OFFLINE_TIMEOUT_MS)
+    {
+        enterOfflineYellowBlink();
+    }
+}
+
+static void enterOfflineYellowBlink()
+{
+    if (IS_OFFLINE_YELLOW_BLINK) return;
+
+    LED_WS2812_GetState(SAVED_LED_STATE);
+    SAVED_LED_STATE_VALID = true;
+
+    LED_Control_t offlineState = SAVED_LED_STATE;
+    offlineState.color = COLOR_YELLOW;
+    offlineState.isBlinking = true;
+    offlineState.blinkRate = BLINK_RATE_120;
+    offlineState.brightness = 50;
+        
+
+    LED_WS2812_SetState(offlineState);
+    IS_OFFLINE_YELLOW_BLINK = true;
+    Serial.println("[LatencyTask] Time sync response timeout. Enter offline yellow blink.");
+}
+
+static void leaveOfflineYellowBlink()
+{
+    if (!IS_OFFLINE_YELLOW_BLINK) return;
+
+    IS_OFFLINE_YELLOW_BLINK = false;
+    if (SAVED_LED_STATE_VALID) {
+        LED_WS2812_SetState(SAVED_LED_STATE);
+    }
+    SAVED_LED_STATE_VALID = false;
+    Serial.println("[LatencyTask] Time sync response restored. Leave offline yellow blink.");
 }

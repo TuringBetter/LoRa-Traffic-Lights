@@ -180,8 +180,8 @@ void setBrightness(const String &payload)
         uint8_t low = strtol(payloadStr.substring(secondHex, secondHex + 4).c_str(), NULL, 16);
         uint16_t payload_brightness = (high << 8) | low;
         
-        // 将0~7000的亮度值映射到0~100
-        uint8_t led_brightness = (uint8_t)((payload_brightness * 100) / 7000);
+        // 将0~7000的亮度值映射到0~200
+        uint8_t led_brightness = (uint8_t)((payload_brightness * 200) / 7000);
         
         LED_WS2812_SetBrightness(led_brightness);
     } 
@@ -229,7 +229,7 @@ void setAll(const String &payload)
     uint8_t high_byte = strtol(payloadStr.substring(thirdHex, thirdHex + 4).c_str(), NULL, 16);
     uint8_t low_byte = strtol(payloadStr.substring(fourthHex, fourthHex + 4).c_str(), NULL, 16);
     uint16_t brightness_val = (high_byte << 8) | low_byte;
-    new_led_control.brightness = (uint8_t)((brightness_val * 255) / 7000);
+    new_led_control.brightness = (uint8_t)((brightness_val * 200) / 7000);
 
     // 解析亮灯方式（第5字节）
     int fifthHex = payloadStr.indexOf("0x", fourthHex + 4);
