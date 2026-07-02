@@ -15,7 +15,7 @@
   ******************************************************************************
   */
  
-  #include <Arduino.h>
+#include <Arduino.h>
 #include "RadarModule.h"
 #include "LED_WS2812Module.h"
 #include "SyncTime.h" 
@@ -75,6 +75,9 @@ bool Radar_IsActiveOrExtending() {
 
 /* 处理雷达数据 */
 static void processRadarData() {
+
+    if (!radarModuleEnabled) return;      // 新增：禁用时跳过所有检测
+    
     int radarValue = digitalRead(RADAR_GPIO_PIN);   // 读取GPIO16的电平状态
     // `last_state_for_restore` 不再需要，因为 LED_WS2812_ApplyPendingOrRestore 不再接收参数
     // static LED_Control_t last_state_for_restore; 
@@ -143,5 +146,31 @@ static void processRadarData() {
                 // Serial.println("[Radar] Warning: processRadarData (delay end) failed to acquire mutex for write!");
             }
         }
+    }
+}
+
+void Radar_Disable()
+{
+    if (xSemaphoreTake(radarStateMutex, portMAX_DELAY) == pdTRUE) {    //获取雷达锁
+        radarModuleEnabled = false;              //关闭使能标志
+        bool needCleanup = _vehicleDetected || waitingForDelay;    //为状态还原保存标志位
+        _vehicleDetected  = false;               //清除有车标志
+        waitingForDelay   = false;               //清除延时标志
+        xSemaphoreGive(radarStateMutex);
+
+        if (needCleanup) {          //由于状态还原会调LED锁，所以分开获取锁，也可以合并到上面
+            LED_WS2812_ApplyPendingOrRestore();    //LED状态还原normal
+        }
+
+        Serial.println("[Radar] Radar disabled.");
+    }
+}
+
+void Radar_Enable()
+{
+    if (xSemaphoreTake(radarStateMutex, portMAX_DELAY) == pdTRUE) {
+        radarModuleEnabled = true;
+        xSemaphoreGive(radarStateMutex);
+        Serial.println("[Radar] Radar enabled.");
     }
 }

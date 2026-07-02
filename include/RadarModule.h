@@ -33,3 +33,7 @@ extern bool radarModuleEnabled;
 
 // 判断雷达是否激活或处于延长闪烁状态的函数
 extern bool Radar_IsActiveOrExtending();
+
+// 雷达开关控制函数
+void Radar_Disable();
+void Radar_Enable();

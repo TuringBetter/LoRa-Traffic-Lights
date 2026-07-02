@@ -30,6 +30,7 @@
 #include "LoRaModule.h"
 #include "NVSManager.h"
 #include "AccelerometerModule.h"
+#include "RadarModule.h"
 
 typedef void (*portHandler)(const String& payload);
 
@@ -42,6 +43,7 @@ static void setSwitch(const String& payload);
 static void setAll(const String& payload);
 static void joinGroup(const String& payload);
 static void setAccMonitor(const String& payload);
+static void setRadarSwitch(const String& payload);
 
 static uint32_t REAL_TIME_MS = 0;
 
@@ -65,6 +67,7 @@ static const portHandler portHandlers[] =
     setAll,              // 15
     joinGroup,           // 16
     setAccMonitor,       // 17
+    setRadarSwitch,      // 18
     NULL
 };
 
@@ -372,4 +375,13 @@ static void setAccMonitor(const String &payload)
             Serial.println("[LoRaHandler] 加速度监测任务未运行，无需关闭");
         }
     }
+}
+
+static void setRadarSwitch(const String &payload)
+{
+    uint8_t enable = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
+    if (enable == 0x01)
+        Radar_Enable();
+    else
+        Radar_Disable();
 }
