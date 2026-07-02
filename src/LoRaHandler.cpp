@@ -43,7 +43,6 @@ static void setSwitch(const String& payload);
 static void setAll(const String& payload);
 static void joinGroup(const String& payload);
 static void setAccMonitor(const String& payload);
-static void setRadarSwitch(const String& payload);
 
 static uint32_t REAL_TIME_MS = 0;
 
@@ -67,7 +66,6 @@ static const portHandler portHandlers[] =
     setAll,              // 15
     joinGroup,           // 16
     setAccMonitor,       // 17
-    setRadarSwitch,      // 18
     NULL
 };
 
@@ -238,6 +236,16 @@ void setAll(const String &payload)
     uint8_t manner_val = strtol(payloadStr.substring(fifthHex, fifthHex + 4).c_str(), NULL, 16);
     new_led_control.isBlinking = (manner_val == 0x00);  // 0x00闪烁，0x01常亮
 
+    // 解析雷达开关（第6字节，可选）
+    int sixthHex = payloadStr.indexOf("0x", fifthHex + 4);
+    if (sixthHex >= 0) {
+        uint8_t radar_val = strtol(payloadStr.substring(sixthHex, sixthHex + 4).c_str(), NULL, 16);
+        if (radar_val == 0x01)
+            Radar_Enable();
+        else
+            Radar_Disable();
+    }
+
     LED_WS2812_SetState(new_led_control);
 }
 
@@ -375,13 +383,4 @@ static void setAccMonitor(const String &payload)
             Serial.println("[LoRaHandler] 加速度监测任务未运行，无需关闭");
         }
     }
-}
-
-static void setRadarSwitch(const String &payload)
-{
-    uint8_t enable = strtol(payload.substring(payload.indexOf("0x")).c_str(), NULL, 16);
-    if (enable == 0x01)
-        Radar_Enable();
-    else
-        Radar_Disable();
 }
