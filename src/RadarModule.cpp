@@ -45,7 +45,7 @@ void Radar_init()
         Serial.println("[Radar] 错误：无法创建雷达状态互斥锁！系统可能不稳定。");
         while(1) { vTaskDelay(pdMS_TO_TICKS(100)); } // 阻止系统继续运行
     }
-    radarModuleEnabled = true;
+    radarModuleEnabled = false;
 }
 
 /* 雷达任务 */
